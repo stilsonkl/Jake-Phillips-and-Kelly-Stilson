@@ -89,16 +89,10 @@ Here each group member gets a section where they, as an individual, detail what 
 
 Please use Github properly: each individual must make the edits to this file representing their own section of work.
 
-**Additional instructions for teams of three:** 
-* Remember that you must have prior written permission to work in groups of three (specifically, an approved `FP3` team declaration submission).
-* The team must nominate a lead. This person is primarily responsible for code integration. This work may be shared, but the team lead has default responsibility.
-* The team lead has full partner implementation responsibilities also.
-* Identify who is team lead.
-
-In the headings below, replace the silly names and GitHub handles with your actual ones.
 
 ### Jake Phillips @Jacob-Phillips
 will write the code responsible for the main menu, the score calculations, tracking and saving to database and the tiles.
 
-### Leonard Lambda @lennylambda
-will work on...
+### Kelly Stilson @Stilsonkl
+will create the images used in the game, the background images and layout, character images, enemy images, and functions used to move them.
+
