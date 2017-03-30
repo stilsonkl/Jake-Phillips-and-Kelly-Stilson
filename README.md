@@ -97,11 +97,8 @@ Please use Github properly: each individual must make the edits to this file rep
 
 In the headings below, replace the silly names and GitHub handles with your actual ones.
 
-### Susan Scheme @susanscheme
-will write the....
+### Jake Phillips @Jacob-Phillips
+will write the code responsible for the main menu, the score calculations, tracking and saving to database and the tiles.
 
 ### Leonard Lambda @lennylambda
 will work on...
-
-### Frank Funktions @frankiefunk 
-Frank is team lead. Additionally, Frank will work on...   
