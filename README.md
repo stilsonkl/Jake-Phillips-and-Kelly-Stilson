@@ -1,9 +1,14 @@
 # Jake-Phillips-and-Kelly-Stilson
 
-# Project Title Goes Here (10 words maximum)
+# Something-Kong
 
 ### Statement
 Describe your project. Why is it interesting? Why is it interesting to you personally? What do you hope to learn? 
+Our project is a game styled inspired by Donkey Kong. Jacob's girlfriends, grand-father helped to develop the original 
+Donkey Kong and Kelly has played it a couple times.
+It is interesting because we both wrote similar games in C++ for previous courses and we are using them as inspiration.
+
+We hope to learn more about the similarities and differences between OOP and Functional Programming techniques. 
 
 ### Analysis
 Explain what approaches from class you will bring to bear on the project.
@@ -11,74 +16,73 @@ Explain what approaches from class you will bring to bear on the project.
 Be explicit about the techiques from the class that you will use. For example:
 
 - Will you use data abstraction? How?
-- Will you use recursion? How?
-- Will you use map/filter/reduce? How? 
-- Will you use object-orientation? How?
-- Will you use functional approaches to processing your data? How?
-- Will you use state-modification approaches? How? (If so, this should be encapsulated within objects. `set!` pretty much should only exist inside an object.)
+- Will you use recursion? 
+We plan to use recursion in the main function to run the game. 
+- Will you use map/filter/reduce?
+We plan to use map to create the background/stage layout for the game.
+- Will you use object-orientation? 
+We plan to use Object -orientation with our main Character. It will have characteristics.
+- Will you use functional approaches to processing your data? 
+
+- Will you use state-modification approaches? 
+We will use state-modification approaches to maintain the state of the game(win, lost, etc).
 - Will you build an expression evaluator, like we did in the symbolic differentatior and the metacircular evaluator?
+No, we do not plan to do this at this time.
 - Will you use lazy evaluation approaches?
+Yes, I plan to approach this project in my pajamas, on the couch, with a large bag of chips.
 
 The idea here is to identify what ideas from the class you will use in carrying out your project. 
 
 **Your project will be graded, in part, by the extent to which you adopt approaches from the course into your implementation, _and_ your discussion about this.**
 
 ### External Technologies
-You are encouraged to develop a project that connects to external systems. For example, this includes systems that:
+If possible, we would like the game to have the ability to save high-scores in a database on the web.
+In order to this, we would have to create a database to store the information, have the game access it, and allow the player
+to decide if they want to store it for future reference.
 
-- retrieve information or publish data to the web
-- generate or process sound
-- control robots or other physical systems
-- interact with databases
-
-If your project will do anything in this category (not only the things listed above!), include this section and discuss.
-
-### Data Sets or other Source Materials
-If you will be working with existing data, where will you get those data from? (Dowload from a website? Access in a database? Create in a simulation you will build? ...)
-
-How will you convert your data into a form usable for your project?  
-
-If you are pulling data from somewhere, actually go download it and look at it before writing the proposal. Explain in some detail what your plan is for accomplishing the necessary processing.
-
-If you are using some other starting materials, explain what they are. Basically: anything you plan to use that isn't code.
+We may incorporate sounds or images from the web.
 
 ### Deliverable and Demonstration
-Explain exactly what you'll have at the end. What will it be able to do at the live demo?
-
-What exactly will you produce at the end of the project? A piece of software, yes, but what will it do? Here are some questions to think about (and answer depending on your application).
-
-Will it run on some data, like batch mode? Will you present some analytical results of the processing? How can it be re-run on different source data?
-
-Will it be interactive? Can you show it working? This project involves a live demo, so interactivity is good.
+The end game is a game.
+During the live demo people should be able to play it, and enjoy it. They will be able to compete to beat their friends, or prove 
+to their enemies that they are superior.
 
 ### Evaluation of Results
-How will you know if you are successful? 
-If you include some kind of _quantitative analysis,_ that would be good.
+We will know we are sucessfull if people are able to play the game.
+Frustration regarding the outcome or score of the game is not a concern when evaluating success or failure on our part.
 
 ## Architecture Diagram
 Upload the architecture diagram you made for your slide presentation to your repository, and include it in-line here.
 
-Create several paragraphs of narrative to explain the pieces and how they interoperate.
 
 ## Schedule
 Explain how you will go from proposal to finished product. 
-
-There are three deliverable milestones to explicitly define, below.
+Lots of hard work and determination, late nights and frustration. Hopefully no smashed computers.
 
 The nature of deliverables depend on your project, but may include things like processed data ready for import, core algorithms implemented, interface design prototyped, etc. 
-
-You will be expected to turn in code, documentation, and data (as appropriate) at each of these stages.
 
 Write concrete steps for your schedule to move from concept to working system. 
 
 ### First Milestone (Sun Apr 9)
 Which portion of the work will be completed (and committed to Github) by this day? 
+-Splash Screen(Main menu)
+-Stage One-Background Tiles
+-Character 
+-Character movement
+-Score calculations
 
 ### Second Milestone (Sun Apr 16)
-Which portion of the work will be completed (and committed to Github) by this day?  
+Which portion of the work will be completed (and committed to Github) by this day? 
+-Stage One complete
+-Stage Two thru Five-Background tiles
+-Character Development- Added Super Powers
+-Score Tracking
 
 ### Public Presentation (Mon Apr 24, Wed Apr 26, or Fri Apr 28 [your date to be determined later])
 What additionally will be completed before the public presentation?
+-Stage One thru Five complete
+-All Character movement and interactions
+-High scores tracked and stored in database.
 
 ## Group Responsibilities
 Here each group member gets a section where they, as an individual, detail what they are responsible for in this project. Each group member writes their own Responsibility section. Include the milestones and final deliverable.
