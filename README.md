@@ -27,8 +27,7 @@ We will use state-modification approaches to maintain the state of the game(win,
 - Will you build an expression evaluator, like we did in the symbolic differentatior and the metacircular evaluator?
 No, we do not plan to do this at this time.
 - Will you use lazy evaluation approaches?
-Yes, I plan to approach this project in my pajamas, on the couch, with a large bag of chips.
-
+WE do not plan on using lazy evaluation approaches at this time.
 
 **Your project will be graded, in part, by the extent to which you adopt approaches from the course into your implementation, _and_ your discussion about this.**
 
