@@ -50,7 +50,6 @@ Frustration regarding the outcome, or score, of the game is not a concern when e
 
 ## Architecture Diagram
 ![Diagram](/arch.png?raw=true "Diagram")
-https://www.gliffy.com/go/share/image/sog6wdsn426669cb6gvi.png?utm_medium=live-embed&utm_source=googleapps 
 
 ## Schedule
 Lots of hard work and determination, late nights and frustration. Hopefully no smashed computers.
