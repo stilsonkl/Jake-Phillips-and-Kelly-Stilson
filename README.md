@@ -57,25 +57,27 @@ Frustration regarding the outcome, or score, of the game is not a concern when e
 Lots of hard work and determination, late nights and frustration. Hopefully no smashed computers.
 
 ### First Milestone (Sun Apr 9)
-Which portion of the work will be completed (and committed to Github) by this day? 
--Splash Screen(Main menu)  
--Stage One-Background Tiles  
--Character  
--Character movement  
--Score calculations  
+
+-[ ] Splash Screen(Main menu)  
+-[ ] Stage One-Background Tiles  
+-[ ] Character Image  
+-[ ] Character movement  
+-[ ] Enemy Image
+-[ ] Enemy Movement
+-[ ] Score calculations  
 
 ### Second Milestone (Sun Apr 16)
-Which portion of the work will be completed (and committed to Github) by this day? 
--Stage One complete  
--Stage Two thru Five-Background tiles  
--Character Development- Added Super Powers  
--Score Tracking  
+
+-[ ] Stage One complete  
+-[ ] Stage Two thru Five-Background tiles  
+-[ ] Character Development- Added Super Powers  
+-[ ] Score Tracking  
 
 ### Public Presentation (Mon Apr 24, Wed Apr 26, or Fri Apr 28 [your date to be determined later])
-What additionally will be completed before the public presentation?
--Stage One thru Five complete  
--All Character movement and interactions  
--High scores tracked and stored in database.  
+
+-[ ] Stage One thru Five complete  
+-[ ] All Character movement and interactions  
+-[ ] High scores tracked and stored in database.  
 
 
 ## Group Responsibilities
