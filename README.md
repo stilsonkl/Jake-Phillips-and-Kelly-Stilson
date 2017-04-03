@@ -49,7 +49,9 @@ We will know we are sucessfull if people are able to play the game.
 Frustration regarding the outcome, or score, of the game is not a concern when evaluating success or failure on our part.
 
 ## Architecture Diagram
-![Diagram](/arch.png?raw=true "Diagram")
+<!-- Embedded image, so it can change if we need it to without having to reload it... --> 
+<!-- https://www.gliffy.com/go/share/image/sog6wdsn426669cb6gvi.png?utm_medium=live-embed&utm_source=googleapps --> 
+![alt tag](https://www.gliffy.com/go/share/image/sog6wdsn426669cb6gvi.png?utm_medium=live-embed&utm_source=googleapps)
 
 ## Schedule
 Lots of hard work and determination, late nights and frustration. Hopefully no smashed computers.
