@@ -9,6 +9,8 @@
 ;;defines constants used in the making of the worlds
 ;;need to be changed to functions to build the actually SPLASH_SCREEN, Game-stage, etc
 
+
+
 (define START (make-posn 350 300))
 (define CLEAR (make-color 100 100 100 0))
 (define BACKGROUND (square 400 "solid" "Medium Aquamarine"))
@@ -168,16 +170,44 @@
 ;BEHOLD-Menu- contains list of menu components, list of menu posns
 ;places components at posns in order to display info to user
 ;; need to change placeholder text for actual info from player $ world objects
-(define (BEHOLD-Menu)
+(define (render-splashscreen s)
    (place-images
      (list
-      (text "SPLASH SCREEN" 20 "cyan")
+      (text "Pelagic-Kong" 40 "cyan")
       (text "SCORE" 12 "green")
       (text "0" 12 "green")
       (text "LIVES" 12 "blue")
       (text "3" 12 "blue")
+      (text "Difficulty:" 12 "black")
+      (text (number->string (world-difficulty s)) 12 "black")
+      (text "Press shift for help" 16 "green")
       (text "Press Space to Start Game" 16 "Cyan"))
-     (list (make-posn 125 20) (make-posn 50 50) (make-posn 50 70) (make-posn 100 50) (make-posn 100 70) (make-posn 125 125))
+     (list (make-posn 200 20)
+           (make-posn 175 50) (make-posn 175 70)
+           (make-posn 225 50) (make-posn 225 70)
+           (make-posn 200 90) (make-posn 200 100)
+           (make-posn 200 150)
+           (make-posn 200 125))
+     BACKGROUND))
+
+;***********
+; HELP Screen
+;***********
+(define (render-helpscreen s)
+   (place-images
+     (list
+      (text "Pelagic-Kong" 40 "cyan")
+      (text "Goal: Reach the rainbow without getting eaten by a shark" 16 "green")
+      (text "Controls: Arrow Keys or WASD to move." 16 "green")
+      (text "To change the difficulty use the arrow keys while at the splash screen" 12 "green")
+      (text "While playing press SHIFT to exit to splash screen" 12 "green")
+      (text "Press SPACE to return to Splash Screen" 20 "cyan"))
+     (list (make-posn 200 20)
+           (make-posn 200 50)
+           (make-posn 200 80)
+           (make-posn 200 110)
+           (make-posn 200 140)
+           (make-posn 200 170))
      BACKGROUND))
 
 
@@ -305,13 +335,14 @@
 
 (define-struct/contract world ([state (or/c 'splash_screen
                                             'playing
-                                            'lost)]
+                                            'lost
+                                            'help_screen)]
                                [player (or/c #f player?)]
                                [difficulty (or/c 1 2 3)])
   #:transparent)
 
 ;**************
-;Keyboard input
+;Pad input
 ;**************
 ;change handles keyboard input from user
 ;starts game by calling make-world with new state
@@ -319,7 +350,17 @@
 ; can change to pad-event instead of key-event
 (define (change s ke)
   (cond
-    ((and (key=? ke " ") (equal? (world-state s) 'splash_screen)) (make-world 'playing (make-player 'swimming START 3 0) 1))
+    ;;AT SPLASH SCREEN
+    ((and (pad=? ke " ") (equal? (world-state s) 'splash_screen)) (make-world 'playing (make-player 'swimming START 3 0) 1))
+    ((and (pad=? ke "rshift") (equal? (world-state s) 'splash_screen)) (make-world 'help_screen (make-player 'swimming START 3 0) 1))
+    ((and (pad=? ke "shift") (equal? (world-state s) 'splash_screen)) (make-world 'help_screen (make-player 'swimming START 3 0) 1))
+    ((and (pad=? ke "up") (equal? (world-state s) 'splash_screen))(make-world 'splash_screen (make-player 'swimming (make-posn 500 500) 3 0) (+ 1 (world-difficulty s))))
+    ((and (pad=? ke "down") (equal? (world-state s) 'splash_screen))(make-world 'splash_screen (make-player 'swimming (make-posn 500 500) 3 0) (- (world-difficulty s) 1)))
+    ;;AT HELP SCREEN
+    ((and (pad=? ke " ") (equal? (world-state s) 'help_screen)) (make-world 'splash_screen (make-player 'swimming (make-posn 500 500) 3 0) (world-difficulty s)))
+    ;;AT PLAYING SCREEN
+    ((and (pad=? ke "rshift") (equal? (world-state s) 'playing)) (make-world 'splash_screen (make-player 'swimming (make-posn 500 500) 3 0) (world-difficulty s)))
+    ((and (pad=? ke "shift") (equal? (world-state s) 'playing)) (make-world 'splash_screen (make-player 'swimming (make-posn 500 500) 3 0) (world-difficulty s)))
     (else s)))
 
  ;;make worlds
@@ -333,9 +374,10 @@
 ; result of condition needs to be expanded to include functions
 (define (render-world s)
   (cond
-    ((equal? (world-state s) 'playing) (BEHOLD-Stage 1 3 0))
+    ((equal? (world-state s) 'splash_screen) (render-splashscreen s))
+    ((equal? (world-state s) 'help_screen) (render-helpscreen s))
+    ((equal? (world-state s) 'playing) (BEHOLD-Stage 2 3 0))
     ((equal? (world-state s) 'lost) (place-image SEA 150 150 BACKGROUND))
-    ((equal? (world-state s) 'splash_screen) (BEHOLD-Menu))
     (else (place-image ELSE 50 50 BACKGROUND))))
 
 
@@ -349,7 +391,7 @@
   (big-bang (make-water-world)
     [to-draw render-world]
     [name "Pelagic-Kong"]
-    [on-key change]
+    [on-pad change]
     [close-on-stop #t]))
 
 (main)
