@@ -34,20 +34,20 @@
                                 (make-posn 0 25))
                           "solid"
                           "SeaGreen")
-   (list (make-posn 0 15)
-                       (make-pulled-point 1/2 -30 11 12 1/2 30)
-                       (make-pulled-point 1/2 -30 29 12 1/2 30)
-                       (make-pulled-point 1/2 -30 47 9 1/2 30)
-                       (make-posn 50 15)
+   (list (make-posn 0 8)
+                       (make-pulled-point 1/2 -30 11 5 1/2 30)
+                       (make-pulled-point 1/2 -30 29 5 1/2 30)
+                       (make-pulled-point 1/2 -30 47 2 1/2 30)
+                       (make-posn 50 8)
                        (make-posn 50 25)
                        (make-posn 0 25))
                   "solid"
                   "White")
-  (list (make-posn 0 16)
-                       (make-pulled-point 1/2 -30 9 13 1/2 30)
-                       (make-pulled-point 1/2 -30 27 13 1/2 30)
-                       (make-pulled-point 1/2 -30 46 10 1/2 30)
-                       (make-posn 50 16)
+  (list (make-posn 0 9)
+                       (make-pulled-point 1/2 -30 9 6 1/2 30)
+                       (make-pulled-point 1/2 -30 27 6 1/2 30)
+                       (make-pulled-point 1/2 -30 46 3 1/2 30)
+                       (make-posn 50 9)
                        (make-posn 50 25)
                        (make-posn 0 25))
                   "solid"
@@ -72,7 +72,33 @@
 ;Images Defined
 ;*************
 
+;;Shark
+(define sharkfin
+  (overlay/align "center" "bottom"
+                 (rectangle 25 72 "outline" CLEAR)
+                 (polygon
+                  (list (make-pulled-point 1/2 -20 0.5 0.5 1/3 -55) ;;top point
+                 (make-pulled-point 1/2 30 25 32 1/3 0)  ;;right bottom corner
+                 (make-pulled-point 1/2 0 0 32 1/2 20)) ;;left bottom corner
+                  "solid"
+                 "DarkGray")
+                 (polygon
+                  (list (make-pulled-point 1/2 -20 0 0 1/4 -35) ;;top point
+                 (make-pulled-point 1/2 30 25 32 1/3 0)  ;;right bottom corner
+                 (make-pulled-point 1/2 0 0 32 1/2 20)) ;;left bottom corner
+                  "solid"
+                  "DimGray")
+                 (polygon
+                  (list (make-pulled-point 1/2 -20 0.5 0.5 1/3 -55) ;;top point
+                 (make-pulled-point 1/2 30 25 32 1/3 0)  ;;right bottom corner
+                 (make-pulled-point 1/2 0 0 32 1/2 20)) ;;left bottom corner
+                  "outline"
+                 (make-pen "Dark Slate gray" 1 "solid" "butt" "miter"))))
+
+
+;****************
 ;;Walley Character images and draw-functions
+;****************
 (define (draw-walley mood)
    ;;face
   (define happy-face
@@ -163,6 +189,28 @@
   (if (eq? direction 'left)
       (flip-horizontal (draw-walley mood))
       (draw-walley mood)))
+
+;;**********
+;;  Enemy Struct
+;;**********
+
+;;define/contract struct for emeny shark.
+;;
+(define-struct/contract shark ([state (or/c 'killing 'dead)]
+                               [p (or/c #f posn?)]
+                               [difficulty (or/c 1 2 3 4)]
+                               [speed (or/c 1 2 3 4)]))
+
+;;draw-enemires funtion takes the difficulty setting of the level to create a list of shark items
+;;
+  (define (draw-enemies d)
+    (map (lambda (p) (make-shark 'killing p d d))
+         (for/list ([i (in-range 0 (* d 2))])
+           (cond
+             ((eq? d 1) (make-posn 20 (* (+ i 2) (/ 300 4))))
+             ((eq? d 2) (make-posn 20 (* (+ i 2) (/ 300 4))))))))
+     
+  
 
 ;***********
 ; MENU display
@@ -263,6 +311,7 @@
 (define-struct/contract tile ([up? boolean?])
   #:transparent)
 
+;;map to determine what image tile to place on the background based on list passed from build-board
 (define (place-tiles t)
   (map (lambda (n) (if(tile-up? n) SPOUT_TILE FLOOR_TILE))
        t))  
@@ -292,13 +341,16 @@
 ;;
 (define (BEHOLD-Stage diff life sc)
   (define st 
-  (make-stage 'start diff happy-walley (draw-HUD life diff sc) (build-board diff)))
+  (make-stage 'start diff (draw-enemies diff) happy-walley (draw-HUD life diff sc) (build-board diff)))
+  ;;@Stilsonkl draw sharks using underlay instead of place-image
   ;;add components to list
   (define stage-comp
-    (append (append (list (stage-HUD st)) (place-tiles (stage-board st))) (list (scale (* 1/2 diff) (swim 'happy 'left)))))
+    (append (append (append (list (stage-HUD st)) (place-tiles (stage-board st))) (for/list ([i (stage-Enemies st)])
+                             sharkfin) (list (scale (* 1/2 diff) (swim 'happy 'left))))))
   (define stage-posn
-    (append (append (list (make-posn 200 37)) STAGE-ONE-POSN) (list START)))
-  ;;draw board tiles
+    (append (append (append (list (make-posn 200 37)) STAGE-ONE-POSN) (for/list ([i (stage-Enemies st)])
+                           (shark-p i)) (list START))))
+  ;;draw stage components
   (place-images stage-comp stage-posn BACKGROUND))
   
 
@@ -316,6 +368,7 @@
                                             'won
                                             'lost)]
                                [difficulty (or/c 1 2 3 4 5)]
+                               [Enemies (listof shark?)]
                                [Walley any/c]
                                [HUD any/c]
                                [board (listof tile?)])
