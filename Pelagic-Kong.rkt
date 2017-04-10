@@ -235,6 +235,7 @@
    (place-images
      (list
       (text "Pelagic-Kong" 40 "cyan")
+
       (text "SCORE" 18 "green")
       (text (number->string (world-score s)) 18 "green")
       (text "DIFFICULTY:" 18 "black")
@@ -270,7 +271,7 @@
     ((< d 10) d)
     ((< d 100) (/ d 10))
     ((< d 1000) (/ d 100))))
-               
+
 ;***********
 ; HELP Screen
 ;***********
@@ -449,6 +450,7 @@
 (define (change s pe)
   (cond
     ;;AT SPLASH SCREEN
+
     ((and (pad=? pe " ") (equal? (world-state s) 'splash_screen)) (make-world 'playing (world-player s) (world-difficulty s) (world-score s)))
     ((and (pad=? pe "rshift") (equal? (world-state s) 'splash_screen)) (make-world 'help_screen (world-player s) (world-difficulty s) (world-score s)))
     ((and (pad=? pe "shift") (equal? (world-state s) 'splash_screen)) (make-world 'help_screen (world-player s) (world-difficulty s) (world-score s)))
