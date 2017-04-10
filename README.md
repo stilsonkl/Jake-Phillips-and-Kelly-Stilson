@@ -1,6 +1,6 @@
 # Jake-Phillips-and-Kelly-Stilson
 
-# Pelagic-Kong?
+# Pelagic-Kong
 
 ### Statement
 Our project is a game styled inspired by Donkey Kong. 
@@ -57,18 +57,20 @@ Lots of hard work and determination, late nights and frustration. Hopefully no s
 
 ### First Milestone (Sun Apr 9)
 
-- [ ]  Splash Screen(Main menu)  
-- [ ]  Stage One-Background Tiles  
-- [ ]  Character Image  
+- [x]  Splash Screen(Main menu)  
+- [x]  Stage One-Background Tiles  
+- [x]  Character Image  
 - [ ]  Character movement  
-- [ ]  Enemy Image  
+- [x]  Enemy Image  
 - [ ]  Enemy Movement  
-- [ ]  Score calculations  
+- [x]  Score calculations  
 
 ### Second Milestone (Sun Apr 16)
 
 - [ ]  Stage One complete  
 - [ ]  Stage Two thru Five-Background tiles  
+- [ ]  Character movement
+- [ ]  Enemy Movement 
 - [ ]  Character Development- Added Super Powers  
 - [ ]  Score Tracking  
 
