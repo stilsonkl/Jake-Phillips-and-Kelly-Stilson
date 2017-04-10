@@ -3,15 +3,24 @@
 (require 2htdp/universe)
 (require lang/posn)
 
+;(define (posn-x p)
+ ; (car p))
+
 ;************
 ; CONSTANTS
 ;************
 ;;defines constants used in the making of the worlds
 ;;need to be changed to functions to build the actually SPLASH_SCREEN, Game-stage, etc
 
+
+
 (define START (make-posn 350 300))
 (define CLEAR (make-color 100 100 100 0))
 (define BACKGROUND (square 400 "solid" "Medium Aquamarine"))
+(define NORMAL (text "NORMAL" 14 "RED"))
+(define LASER-SHARKS (text "SHARKS-WITH-LASERBEAMS" 14 "RED"))
+(define HIGHLIGHT (rectangle 200 15 "solid" "yellow"))
+(define SHARKNADO (text "SHARK-NADO" 14 "RED"))
 (define spout
     (polygon (list (make-posn 18 70)
                    (make-pulled-point 1/2 -20 3 20 2/3 -70)
@@ -130,6 +139,7 @@
   (define face
     (cond
     ((eq? mood 'happy) happy-face)
+    ((eq? mood 'swimming) happy-face)
     (else sad-face)))  
   (define eye-r (overlay/offset (circle 5 "solid" "white")
                   -3 1
@@ -179,14 +189,19 @@
 
 ;;constants for walley
 (define happy-walley
- (draw-walley 'happy))
+ (draw-walley 'swimming))
 (define sad-walley
- (draw-walley 'sad))
+ (draw-walley 'dead))
 
 (define (swim mood direction)
-  (if (eq? direction 'left)
+  (if (eq? direction "left")
       (flip-horizontal (draw-walley mood))
       (draw-walley mood)))
+
+(define (move_walley p pe)
+  (cond
+    ((eq? pe "right") (make-player (player-state p) (make-posn (+ 10 (posn-x (player-position p))) (posn-y (player-position p))) "right" (player-lives p)))
+    ((eq? pe "left") (make-player (player-state p) (make-posn (- 10 (posn-x (player-position p))) (posn-y (player-position p))) "left" (player-lives p)))))
 
 ;;**********
 ;;  Enemy Struct
@@ -196,17 +211,17 @@
 ;;
 (define-struct/contract shark ([state (or/c 'killing 'dead)]
                                [p (or/c #f posn?)]
-                               [difficulty (or/c 1 2 3 4)]
-                               [speed (or/c 1 2 3 4)]))
+                               [difficulty any/c]
+                               [speed any/c]))
 
 ;;draw-enemires funtion takes the difficulty setting of the level to create a list of shark items
 ;;
-  (define (draw-enemies d)
-    (map (lambda (p) (make-shark 'killing p d d))
-         (for/list ([i (in-range 0 (* d 2))])
+  (define (draw-enemies d n)
+    (map (lambda (p) (make-shark 'killing p d n))
+         (for/list ([i (in-range 0 (* n 2))])
            (cond
-             ((eq? d 1) (make-posn 20 (* (+ i 2) (/ 300 4))))
-             ((eq? d 2) (make-posn 20 (* (+ i 2) (/ 300 4))))))))
+             ((eq? n 1) (make-posn 20 (* (+ i 2) (/ 300 4))))
+             (else (make-posn 20 (* (+ i 2) (/ 300 4))))))))
      
   
 
@@ -216,16 +231,64 @@
 ;BEHOLD-Menu- contains list of menu components, list of menu posns
 ;places components at posns in order to display info to user
 ;; need to change placeholder text for actual info from player $ world objects
-(define (BEHOLD-Menu)
+(define (render-splashscreen s)
    (place-images
      (list
-      (text "SPLASH SCREEN" 20 "cyan")
-      (text "SCORE" 12 "green")
-      (text "0" 12 "green")
-      (text "LIVES" 12 "blue")
-      (text "3" 12 "blue")
+      (text "Pelagic-Kong" 40 "cyan")
+      (text "SCORE" 18 "green")
+      (text (number->string (world-score s)) 18 "green")
+      (text "DIFFICULTY:" 18 "black")
+      NORMAL
+      LASER-SHARKS
+      SHARKNADO
+      HIGHLIGHT
+      (text "Press shift for help" 16 "green")
       (text "Press Space to Start Game" 16 "Cyan"))
-     (list (make-posn 125 20) (make-posn 50 50) (make-posn 50 70) (make-posn 100 50) (make-posn 100 70) (make-posn 125 125))
+     (list (make-posn 200 20)
+           (make-posn 175 70)
+           (make-posn 215 70)
+           (make-posn 200 100)
+           (make-posn 200 115)
+           (make-posn 200 130)
+           (make-posn 200 145)
+           (highlight_difficulty (world-difficulty s))
+           (make-posn 200 175)
+           (make-posn 200 190))
+     BACKGROUND))
+
+;;function to highlight difficulty level
+(define (highlight_difficulty d)
+  (cond
+    ((eq? d 1) (make-posn 200 115))
+    ((eq? d 10) (make-posn 200 130))
+    ((eq? d 100) (make-posn 200 145))
+    (else (make-posn 200 115))))
+
+;;function to return stage number from difficulty level
+(define (stage_number d)
+  (cond
+    ((< d 10) d)
+    ((< d 100) (/ d 10))
+    ((< d 1000) (/ d 100))))
+               
+;***********
+; HELP Screen
+;***********
+(define (render-helpscreen s)
+   (place-images
+     (list
+      (text "Pelagic-Kong" 40 "cyan")
+      (text "Goal: Reach the rainbow without getting eaten by a shark" 16 "green")
+      (text "Controls: Arrow Keys or WASD to move." 16 "green")
+      (text "To change the difficulty use the arrow keys while at the splash screen" 12 "green")
+      (text "While playing press SPACE to exit to splash screen" 12 "green")
+      (text "Press SPACE to return to Splash Screen" 20 "cyan"))
+     (list (make-posn 200 20)
+           (make-posn 200 50)
+           (make-posn 200 80)
+           (make-posn 200 110)
+           (make-posn 200 140)
+           (make-posn 200 170))
      BACKGROUND))
 
 
@@ -267,11 +330,22 @@
   (define hud-comp
     (append (for/list ([i (in-range 0 l)])
                 HEART)
-             (list (text "STAGE 1" 18 "black") (text "SCORE: XXX" 14 "Black"))))
+             (list (text "STAGE:" 22 "black")
+                   (text (number->string (stage_number diff)) 22 "black")
+                   (cond
+                     ((< diff 10) NORMAL)
+                     ((< diff 100) LASER-SHARKS)
+                     ((< diff 1000) SHARKNADO))                      
+                   (text "SCORE:" 14 "Black")
+                   (text (number->string sc) 14 "black"))))
   (define hud-posn
     (append (for/list ([i (in-range 1 (+ l 1))])
                (make-posn (* i 30) 20))
-            (list (make-posn 175 20) (make-posn 325 20))))
+            (list (make-posn 175 20)
+                  (make-posn 225 20)
+                  (make-posn 200 40)
+                  (make-posn 325 20)
+                  (make-posn 370 20))))
   (place-images  hud-comp hud-posn HUD-AREA))
 
 ;************
@@ -296,11 +370,11 @@
 ;  eq test= player?
 ;  fields= player-state, player-position, player-lives
 (define-struct/contract player ([state (or/c 'swimming
-                                            'win
-                                            'dead)]
+                                             'dead)]
                                [position (or/c #f posn?)]
-                               [lives (or/c 0 1 2 3)]
-                               [score any/c])
+                               [direction (or/c "right"
+                                                "left")]
+                               [lives (or/c 0 1 2 3)])
   #:transparent)
 
 ;***********
@@ -309,14 +383,14 @@
 ;;BEHOLD-Stage function that takes info from the player in order to build the stage
 ;  for game-play
 ;;
-(define (BEHOLD-Stage diff life sc)
+(define (BEHOLD-Stage diff p sc)
   (define st 
-  (make-stage 'start diff (draw-enemies diff) happy-walley (draw-HUD life diff sc) (build-board diff)))
+  (make-stage 'start diff (draw-enemies diff (stage_number diff)) (swim (player-state p) (player-direction p)) (draw-HUD (player-lives p) diff sc) (build-board diff)))
   ;;@Stilsonkl draw sharks using underlay instead of place-image
   ;;add components to list
   (define stage-comp
     (append (append (append (list (stage-HUD st)) (place-tiles (stage-board st))) (for/list ([i (stage-Enemies st)])
-                             sharkfin) (list (scale (* 1/2 diff) (swim 'happy 'left))))))
+                             sharkfin) (list (scale (* 1/2 (stage_number diff)) (swim 'happy 'left))))))
   (define stage-posn
     (append (append (append (list (make-posn 200 37)) STAGE-ONE-POSN) (for/list ([i (stage-Enemies st)])
                            (shark-p i)) (list START))))
@@ -337,7 +411,7 @@
                                             'dead
                                             'won
                                             'lost)]
-                               [difficulty (or/c 1 2 3 4 5)]
+                               [difficulty any/c]
                                [Enemies (listof shark?)]
                                [Walley any/c]
                                [HUD any/c]
@@ -358,27 +432,47 @@
 
 (define-struct/contract world ([state (or/c 'splash_screen
                                             'playing
-                                            'lost)]
+                                            'lost
+                                            'help_screen)]
                                [player (or/c #f player?)]
-                               [difficulty (or/c 1 2 3)])
+                               [difficulty any/c]
+                               [score any/c])
   #:transparent)
 
 ;**************
-;Keyboard input
+;Pad input
 ;**************
 ;change handles keyboard input from user
 ;starts game by calling make-world with new state
 ; @Jacob-Phillips - can expand to include other menu options
 ; can change to pad-event instead of key-event
-(define (change s ke)
+(define (change s pe)
   (cond
-    ((and (key=? ke " ") (equal? (world-state s) 'splash_screen)) (make-world 'playing (make-player 'swimming START 3 0) 1))
+    ;;AT SPLASH SCREEN
+    ((and (pad=? pe " ") (equal? (world-state s) 'splash_screen)) (make-world 'playing (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "rshift") (equal? (world-state s) 'splash_screen)) (make-world 'help_screen (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "shift") (equal? (world-state s) 'splash_screen)) (make-world 'help_screen (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "up") (equal? (world-state s) 'splash_screen))(cond
+                                                                    ((eq? (world-difficulty s) 1) (make-world 'splash_screen (world-player s) 100 (world-score s)))
+                                                                    ((eq? (world-difficulty s) 10) (make-world 'splash_screen (world-player s) 1 (world-score s)))
+                                                                    ((eq? (world-difficulty s) 100) (make-world 'splash_screen (world-player s) 10 (world-score s)))))
+    ((and (pad=? pe "down") (equal? (world-state s) 'splash_screen))(cond
+                                                                    ((eq? (world-difficulty s) 1) (make-world 'splash_screen (world-player s) 10 (world-score s)))
+                                                                    ((eq? (world-difficulty s) 10) (make-world 'splash_screen (world-player s) 100 (world-score s)))
+                                                                    ((eq? (world-difficulty s) 100) (make-world 'splash_screen (world-player s) 1 (world-score s)))))
+    ;;AT HELP SCREEN
+    ((and (pad=? pe "rshift") (equal? (world-state s) 'help_screen)) (make-world 'splash_screen (world-player s) (world-difficulty s) (world-score s)))
+    ;;AT PLAYING SCREEN
+    ((and (pad=? pe "rshift") (equal? (world-state s) 'playing)) (make-world 'splash_screen (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "shift") (equal? (world-state s) 'playing)) (make-world 'splash_screen (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "right") (equal? (world-state s) 'playing)) (BEHOLD-Stage (world-difficulty s) (move_walley (world-player s) pe) (world-score s)))
+    ((and (pad=? pe "left") (equal? (world-state s) 'playing)) (BEHOLD-Stage (world-difficulty s) (move_walley (world-player s) pe) (world-score s)))
     (else s)))
 
  ;;make worlds
 ;;make-initial-world(create the splash_screen)
 (define (make-water-world)
-  (make-world 'splash_screen (make-player 'swimming (make-posn 500 500) 3 0) 1))
+  (make-world 'splash_screen (make-player 'swimming START "left" 3) 1 0))
 
 ;;render-world
 ;;draws the world based on the state of the world
@@ -386,9 +480,10 @@
 ; result of condition needs to be expanded to include functions
 (define (render-world s)
   (cond
-    ((equal? (world-state s) 'playing) (BEHOLD-Stage 1 3 0))
+    ((equal? (world-state s) 'splash_screen) (render-splashscreen s))
+    ((equal? (world-state s) 'help_screen) (render-helpscreen s))
+    ((equal? (world-state s) 'playing) (BEHOLD-Stage (world-difficulty s) (world-player s) (world-score s)))
     ((equal? (world-state s) 'lost) (place-image SEA 150 150 BACKGROUND))
-    ((equal? (world-state s) 'splash_screen) (BEHOLD-Menu))
     (else (place-image ELSE 50 50 BACKGROUND))))
 
 
@@ -402,7 +497,7 @@
   (big-bang (make-water-world)
     [to-draw render-world]
     [name "Pelagic-Kong"]
-    [on-key change]
+    [on-pad change]
     [close-on-stop #t]))
 
 (main)
