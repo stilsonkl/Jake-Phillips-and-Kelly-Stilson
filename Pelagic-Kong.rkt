@@ -3,8 +3,6 @@
 (require 2htdp/universe)
 (require lang/posn)
 
-;(define (posn-x p)
- ; (car p))
 
 ;************
 ; CONSTANTS
@@ -101,7 +99,55 @@
                  (make-pulled-point 1/2 0 0 32 1/2 20)) ;;left bottom corner
                   "outline"
                  (make-pen "Dark Slate gray" 1 "solid" "butt" "miter"))))
+;;laser-shark
+(define laser-shark
+  (add-line
+   (add-line sharkfin
+             5 50
+             18 50
+             (make-pen "black" 4 "solid" "round" "round"))
+            20 50
+            50 50
+            "red"))
 
+;;Rainbow
+(define rainbow
+  (freeze
+         (place-image (circle 9 "solid" "white")
+                      45 65
+                      (place-image (circle 10 "solid" "white")
+                      60 65
+                      (place-image (circle 9 "solid" "white")
+                      75 65
+         (scene+curve
+         (scene+curve
+          (scene+curve
+           (scene+curve
+            (scene+curve
+             (scene+curve
+              (scene+curve (rectangle 100 75 "solid" CLEAR)
+                           0 20 25 2/3 ;red
+                           70 65 0 0
+                           (make-pen "red" 5 "solid" "butt" "round"))
+              0 20 23 2/3 ;orange
+              65 65 0 0
+              (make-pen "orange" 5 "solid" "butt" "round"))
+             0 20 21 2/3 ;yellow
+              60 65 0 0
+              (make-pen "yellow" 5 "solid" "butt" "round"))
+            0 20 19 2/3 ;green
+              55 65 0 0
+              (make-pen "green" 5 "solid" "butt" "round"))
+           0 21 17 2/3 ;blue
+              50 65 0 0
+              (make-pen "blue" 5 "solid" "butt" "round"))
+          0 21 15 2/3 ;violet
+              45 65 0 0
+              (make-pen "violet" 5 "solid" "butt" "round"))
+         0 22 13 2/3 ;crop
+              40 65 0 0
+              (make-pen "Medium Aquamarine" 5 "solid" "butt" "round"))
+         )))))
 
 ;****************
 ;;Walley Character images and draw-functions
@@ -390,10 +436,15 @@
   ;;@Stilsonkl draw sharks using underlay instead of place-image
   ;;add components to list
   (define stage-comp
-    (append (append (append (list (stage-HUD st)) (place-tiles (stage-board st))) (for/list ([i (stage-Enemies st)])
-                             sharkfin) (list (scale (* 1/2 (stage_number diff)) (swim 'happy 'left))))))
+    (append (append (append (list rainbow (stage-HUD st)) (place-tiles (stage-board st)))
+                    (for/list ([i (stage-Enemies st)])
+                             (cond
+                               ((< diff 10) sharkfin)
+                               ((< diff 100) laser-shark)
+                               ((< diff 1000) sharkfin)))
+                    (list (scale (* 1/2 (stage_number diff)) (swim 'happy 'left))))))
   (define stage-posn
-    (append (append (append (list (make-posn 200 37)) STAGE-ONE-POSN) (for/list ([i (stage-Enemies st)])
+    (append (append (append (list (make-posn 50 75) (make-posn 200 18)) STAGE-ONE-POSN) (for/list ([i (stage-Enemies st)])
                            (shark-p i)) (list START))))
   ;;draw stage components
   (place-images stage-comp stage-posn BACKGROUND))
@@ -451,7 +502,7 @@
   (cond
     ;;AT SPLASH SCREEN
 
-    ((and (pad=? pe " ") (equal? (world-state s) 'splash_screen)) (make-world 'playing (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe " ") (equal?  (world-state s) 'splash_screen)) (make-world 'playing (world-player s) (world-difficulty s) (world-score s)))
     ((and (pad=? pe "rshift") (equal? (world-state s) 'splash_screen)) (make-world 'help_screen (world-player s) (world-difficulty s) (world-score s)))
     ((and (pad=? pe "shift") (equal? (world-state s) 'splash_screen)) (make-world 'help_screen (world-player s) (world-difficulty s) (world-score s)))
     ((and (pad=? pe "up") (equal? (world-state s) 'splash_screen))(cond
