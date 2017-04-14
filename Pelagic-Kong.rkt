@@ -3,8 +3,6 @@
 (require 2htdp/universe)
 (require lang/posn)
 
-;(define (posn-x p)
- ; (car p))
 
 ;************
 ; CONSTANTS
@@ -13,22 +11,49 @@
 ;;need to be changed to functions to build the actually SPLASH_SCREEN, Game-stage, etc
 
 
+(define WINDOW (make-posn 500 500))
+(define TILE_HEIGHT 75)
+(define TILE_WIDTH 50)
+(define START (make-posn (- (posn-x WINDOW) 50) (- (posn-y WINDOW) (* TILE_HEIGHT 1.5))))
 
-(define START (make-posn 350 300))
 (define CLEAR (make-color 100 100 100 0))
-(define BACKGROUND (square 400 "solid" "Medium Aquamarine"))
+(define BACKGROUND (square (posn-x WINDOW) "solid" "Medium Aquamarine"))
 (define NORMAL (text "NORMAL" 14 "RED"))
 (define LASER-SHARKS (text "SHARKS-WITH-LASERBEAMS" 14 "RED"))
 (define HIGHLIGHT (rectangle 200 15 "solid" "yellow"))
 (define SHARKNADO (text "SHARK-NADO" 14 "RED"))
+
+
+;*************
+;Images Defined
+;*************
+(define SEAFOAM (make-color 104 220 171 85))
+;;(define SEAFOAM "CadetBlue")
+
 (define spout
-    (polygon (list (make-posn 18 70)
-                   (make-pulled-point 1/2 -20 3 20 2/3 -70)
-                   (make-pulled-point 1/2 45 22 13 1/2 -45)
-                   (make-pulled-point 1/2 70 47 19 1/2 20)
-                   (make-posn 32 70))
-                 "solid"
-                  "White"))
+  (let ([points (list (make-pulled-point 0 0 22 58 1.7 25)
+                   (make-pulled-point 1/4 20 3 30 2/3 -70)
+                   (make-pulled-point 1/2 45 22 23 1/2 -45)
+                   (make-pulled-point 1/2 70 47 29 1/4 20)
+                   (make-pulled-point 1.7 -25 28 58 0 0))])
+    (overlay/align "middle" "bottom"
+     (scale 7/8 (polygon points "solid" SEAFOAM))
+     (underlay/align/offset "middle" "middle"
+                           (overlay/align "middle" "bottom"
+                                          (polygon points "solid" SEAFOAM)
+                                          
+                                          (flip-horizontal (scale 7/8(polygon points "solid" SEAFOAM)))
+                                          (rotate 9 (polygon points "solid" "white"))
+                                          (rotate -9 (polygon points "solid" "white"))
+                                          (flip-horizontal (polygon points "solid" "SeaGreen")))
+                           0 32
+                           (polygon points "solid" SEAFOAM))
+     
+     (scale 7/8 (rotate 9 (polygon points "solid" "white")))
+     (scale 7/8 (rotate -9 (polygon points "solid" "white")))
+     (scale 9/9(rotate 10 (polygon points "solid" "SeaGreen")))
+     (scale 9/9(rotate -10 (polygon points "solid" "SeaGreen")))
+     )))
 
 (define waves
   (scene+polygon
@@ -66,18 +91,9 @@
                (rectangle 50 75 "outline" CLEAR)))
 
 (define SPOUT_TILE
-  (place-image
-   (overlay/align "middle" "bottom"
-                  waves
-                  spout)
-   25 47 (rectangle 50 75 "outline" CLEAR)))
-(define SPLASH_SCREEN (text "Splash Screen" 12 "red"))
-(define SEA (text "Game-Play" 10 "blue"))
-(define ELSE (text "Other choice" 10 "blue"))
-
-;*************
-;Images Defined
-;*************
+  (underlay/align "middle" "bottom"
+                 spout
+                 FLOOR_TILE))
 
 ;;Shark
 (define sharkfin
@@ -101,7 +117,139 @@
                  (make-pulled-point 1/2 0 0 32 1/2 20)) ;;left bottom corner
                   "outline"
                  (make-pen "Dark Slate gray" 1 "solid" "butt" "miter"))))
+;;laser-shark
+(define laser-shark
+  (add-line
+   (add-line sharkfin
+             5 50
+             18 50
+             (make-pen "black" 4 "solid" "round" "round"))
+            20 50
+            50 50
+            "red"))
 
+;;Super-Powers
+
+(define ping
+  (pulled-regular-polygon 10 4 3/4 25 "solid" "Ghostwhite"))
+
+(define super-horn (scale 1.2 (rotate -30
+                           (overlay/align/offset "middle" "middle"
+                                          ping
+                                          10 8
+                                          (scene+curve
+                    (scene+curve
+                     (scene+curve
+                      (scene+curve
+                       (scene+curve
+                        (scene+curve
+                         (scene+curve
+                    (scene+curve
+                     (scene+curve
+                      (scene+curve
+                       (scene+curve
+                        (scene+curve (polygon (list (make-posn 0 0) ;;tip point
+                                                    (make-pulled-point 1/3 0 22 45 1/2 -45) ;;right point
+                                                    (make-pulled-point 1/3 45 0 45 1/2 0)) ;;left tail point))
+                                              "solid" "DarkGray")
+                                     0 36 -45 1/2
+                                     18 37 45 1/3
+                                     "silver")
+                        0 37 -44 1/2
+                        17 38 44 1/3
+                        "DimGray")
+                       0 28 -45 1/2
+                       14 29 45 1/3
+                       "silver")
+                      0 29 -45 1/2
+                      14 30 45 1/3
+                      "DimGray")
+                     0 21 -45 1/2
+                     11 22 45 1/3
+                     "silver")
+                    0 22 -45 1/2
+                    11 23 45 1/3
+                    "DimGray")
+                         0 15 -45 1/2
+                         8 16 45 1/3
+                         "silver")
+                        0 16 -45 1/2
+                        8 17 45 1/3
+                        "DimGray")
+                       0 10 -45 1/2
+                       5 11 45 1/3
+                       "silver")
+                      0 11 -45 1/2
+                      5 12 45 1/3
+                      "DimGray")
+                     0 5 -45 1/2
+                     3 6 45 1/3
+                     "silver")
+                    0 6 -45 1/2
+                    3 7 45 1/3
+                    "DimGray")))))
+;;fish
+(define fish
+  (add-polygon (underlay/offset(underlay/offset (ellipse 60 30 "solid" "seagreen")
+                               0 0
+                               (polygon (list (make-pulled-point 1/2 20 -10 15 1/2 -20)
+                                              (make-posn -5 25)
+                                              (make-pulled-point 1/2 -20 5 15 1/2 20)
+                                              (make-posn -5 0))
+                                        "solid" "Aquamarine"))
+                               20 -5
+                               (circle 4 "solid" "LightSalmon"))
+               (list (make-pulled-point 1/2 20 -10 15 1/2 -20)
+                 (make-posn -17 35)
+                 (make-pulled-point 1/2 -20 3 15 1/2 20)
+                 (make-posn -17 -5))
+           "solid"
+           "LightSalmon"))
+
+;;Rainbow
+(define rainbow
+  (freeze
+         (place-image ping
+                                   25 20
+                                   (place-image ping
+                                                51 30
+                                                (place-image ping
+                                                             42 45
+                                                             (place-image (circle 9 "solid" "white")
+                                                                          45 65
+                                                                          (place-image (circle 10 "solid" "white")
+                                                                                       60 65
+                                                                                       (place-image (circle 9 "solid" "white")
+                                                                                                    75 65
+                                                                                                    (scene+curve
+         (scene+curve
+          (scene+curve
+           (scene+curve
+            (scene+curve
+             (scene+curve
+              (scene+curve (rectangle 100 75 "solid" CLEAR)
+                           0 20 25 2/3 ;red
+                           70 65 0 0
+                           (make-pen "red" 5 "solid" "butt" "round"))
+              0 20 23 2/3 ;orange
+              65 65 0 0
+              (make-pen "orange" 5 "solid" "butt" "round"))
+             0 20 21 2/3 ;yellow
+              60 65 0 0
+              (make-pen "yellow" 5 "solid" "butt" "round"))
+            0 20 19 2/3 ;green
+              55 65 0 0
+              (make-pen "green" 5 "solid" "butt" "round"))
+           0 21 17 2/3 ;blue
+              50 65 0 0
+              (make-pen "blue" 5 "solid" "butt" "round"))
+          0 21 15 2/3 ;violet
+              45 65 0 0
+              (make-pen "violet" 5 "solid" "butt" "round"))
+         0 22 13 2/3 ;crop
+              40 65 0 0
+              (make-pen "Medium Aquamarine" 5 "solid" "butt" "round"))
+         ))))))))
 
 ;****************
 ;;Walley Character images and draw-functions
@@ -147,8 +295,41 @@
   (define eye-l (overlay/offset (circle 5 "solid" "white")
                   -3 1
                   (circle 9 "solid" "RoyalBlue")))
+  (define ping
+  (pulled-regular-polygon 10 4 3/4 25 "solid" "Ghostwhite"))
 
-  (define horn (rotate -30 (right-triangle 20 45 "solid" "burlywood")))
+
+
+
+(define horn (rotate -30(scene+curve
+                     (scene+curve
+                      (scene+curve
+                       (scene+curve
+                        (scene+curve
+                         (scene+curve
+                          (polygon (list (make-posn 0 0) ;;tip point
+                           (make-pulled-point 1/3 0 22 45 1/2 -45) ;;right point
+                           (make-pulled-point 1/3 45 0 45 1/2 0)) ;;left tail point
+                     "solid"
+                     "burlywood")
+                          0 36 -45 1/2
+                          18 37 45 1/3
+                          "DarkGoldenrod")
+                         0 28 -45 1/2
+                         14 29 45 1/3
+                         "DarkGoldenrod")
+                        0 21 -45 1/2
+                        11 22 45 1/3
+                        "DarkGoldenrod")
+                       0 15 -45 1/2
+                       8 16 45 1/3
+                       "DarkGoldenrod")
+                      0 10 -45 1/2
+                       5 11 45 1/3
+                       "DarkGoldenrod")
+                     0 5 -45 1/2
+                     3 6 45 1/3
+                     "DarkGoldenrod")))
 
   ;;create closed polygon using list of posn's(x y), points in clockwise order
   (define tail
@@ -211,19 +392,20 @@
 ;;
 (define-struct/contract shark ([state (or/c 'killing 'dead)]
                                [p (or/c #f posn?)]
-                               [difficulty any/c]
-                               [speed any/c]))
+                               [difficulty (and/c natural-number/c (<=/c 1000))]
+                               [speed (and/c natural-number/c (<=/c 10))]))
 
-;;draw-enemires funtion takes the difficulty setting of the level to create a list of shark items
-;;
+;;draw-enemies funtion takes the difficulty setting of the level to create a list of shark items
+;;f is number of floors in stage
   (define (draw-enemies d n)
-    (map (lambda (p) (make-shark 'killing p d n))
-         (for/list ([i (in-range 0 (* n 2))])
-           (cond
-             ((eq? n 1) (make-posn 20 (* (+ i 2) (/ 300 4))))
-             (else (make-posn 20 (* (+ i 2) (/ 300 4))))))))
+    (let ([f 5]) 
+    (map (lambda (p) (make-shark 'killing p d f))
+         (for/list ([i (in-range 0 (- f 2))])
+           (make-posn (* 50 i) (* (+ i 2) (/ (posn-y START) f)))))))
      
   
+(define (screen_shot s)
+  (freeze (BEHOLD-Stage 1 (world-player s) (world-score s))))
 
 ;***********
 ; MENU display
@@ -235,35 +417,41 @@
    (place-images
      (list
       (text "Pelagic-Kong" 40 "cyan")
-
-      (text "SCORE" 18 "green")
-      (text (number->string (world-score s)) 18 "green")
+      (place-image (text (cond
+                           ((eq? (world-state s) 'lost) "GAME OVER")
+                           ((eq? (world-state s) 'won) "CONGRATULATIONS!")
+                           (else "NEW GAME"))
+                         18 "Yellow")
+                   200 20
+                   (place-image (beside (text "SCORE:  " 16 "blue")
+                                        (text (number->string (world-score s)) 18 "blue"))
+                                200 40
+                               (place-image (text "Change difficulty or Press SPACE to start" 16 "blue")
+                                            200 70
+                                            (rectangle 400 100 "outline" CLEAR))))
       (text "DIFFICULTY:" 18 "black")
       NORMAL
       LASER-SHARKS
       SHARKNADO
       HIGHLIGHT
-      (text "Press shift for help" 16 "green")
-      (text "Press Space to Start Game" 16 "Cyan"))
-     (list (make-posn 200 20)
-           (make-posn 175 70)
-           (make-posn 215 70)
-           (make-posn 200 100)
-           (make-posn 200 115)
-           (make-posn 200 130)
-           (make-posn 200 145)
+      (text "Press shift for help" 16 "Blue"))
+     (list (make-posn 250 20) ;title
+           (make-posn 250 110) ;game status box
+           (make-posn 250 160);diff
+           (make-posn 250 175);n
+           (make-posn 250 190);l
+           (make-posn 250 205);sharknado
            (highlight_difficulty (world-difficulty s))
-           (make-posn 200 175)
-           (make-posn 200 190))
+           (make-posn 250 235)) ;help text
      BACKGROUND))
 
 ;;function to highlight difficulty level
 (define (highlight_difficulty d)
   (cond
-    ((eq? d 1) (make-posn 200 115))
-    ((eq? d 10) (make-posn 200 130))
-    ((eq? d 100) (make-posn 200 145))
-    (else (make-posn 200 115))))
+    ((eq? d 1) (make-posn 250 175))
+    ((eq? d 10) (make-posn 250 190))
+    ((eq? d 100) (make-posn 250 205))
+    (else (make-posn 250 175))))
 
 ;;function to return stage number from difficulty level
 (define (stage_number d)
@@ -271,50 +459,133 @@
     ((< d 10) d)
     ((< d 100) (/ d 10))
     ((< d 1000) (/ d 100))))
-
+;;funtion for next stage math
+(define (next-stage d)
+  (cond
+    ((< d 10) (+ d 1))
+    ((< d 100) (+ d 10))
+    ((< d 1000) (+ d 100))))
 ;***********
 ; HELP Screen
 ;***********
 (define (render-helpscreen s)
-   (place-images
-     (list
-      (text "Pelagic-Kong" 40 "cyan")
-      (text "Goal: Reach the rainbow without getting eaten by a shark" 16 "green")
-      (text "Controls: Arrow Keys or WASD to move." 16 "green")
-      (text "To change the difficulty use the arrow keys while at the splash screen" 12 "green")
-      (text "While playing press SPACE to exit to splash screen" 12 "green")
-      (text "Press SPACE to return to Splash Screen" 20 "cyan"))
-     (list (make-posn 200 20)
-           (make-posn 200 50)
-           (make-posn 200 80)
-           (make-posn 200 110)
-           (make-posn 200 140)
-           (make-posn 200 170))
-     BACKGROUND))
+  (cond ((eq? (world-state s) 'help_screen)
+              (place-image
+               (above/align "middle"
+                            (text "Pelagic-Kong" 30 "Cyan")
+                            (rectangle 50 30 "outline" CLEAR)
+                            (beside
+                             (text "Use the  " 17 "red")
+                             (square 25 "solid" "gray")
+                             (text "  and " 17 "RED")
+                             (square 25 "solid" "gray")
+                             (text "  to make " 17 "RED")
+                             (scale 1/3 happy-walley)
+                             (text "  swim left and right." 17 "RED")
+                             )
+                            (beside
+                             (text "Reach the  " 17 "red")
+                             (scale 1/2 rainbow)
+                             (text "  without getting eaten by a " 17 "RED")
+                             (scale 4/5 (overlay/align "middle" "bottom" waves (crop 0 25 25 50 sharkfin))))
+                            (beside
+                              (text "Use the " 17 "RED")
+                              (square 25 "solid" "gray")
+                             (text "  and " 17 "RED")
+                             (square 25 "solid" "gray")
+                             (text "  to make " 17 "RED")
+                             (scale 1/3 happy-walley)
+                             (text " swim up & down the " 17 "RED")
+                             (scale 1/2 spout))
+                            (beside
+                              (text "Catching a " 17 "RED")
+                             (scale 1/2 (rotate -30 fish))
+                             (text "  will give you an extra life." 17 "RED")
+                             (rectangle 50 50 "outline" CLEAR))
+                            (beside
+                             (text "Finding the " 17 "RED")
+                             (scale 2/3 super-horn)
+                             (text "  will protect you from the " 17 "RED")
+                             (scale 4/5 (overlay/align "middle" "bottom" waves (crop 0 25 25 50 sharkfin))))
+                            (rectangle 50 30 "outline" CLEAR)
+                            (text "Press -> key for next page" 18 "RED")
+                            (rectangle 50 30 "outline" CLEAR)
+                            (text "Press SHIFT to return to Splash Screen" 20 "RED"))
+                            
+               250 220
+               BACKGROUND))
+         (else (place-image
+               (above/align "middle"
+                            (text "Pelagic-Kong" 30 "Cyan")
+                            (beside
+                            (text "Difficulty Options:" 16 "yellow")
+                            (rectangle 50 40 "outline" CLEAR))
+                            (beside
+                             (text "NORMAL: " 16 "black")
+                            (scale 4/5 (overlay/align "middle" "bottom" waves (crop 0 25 25 50 sharkfin))))
+                             (text " Will kill you if you get too close" 16 "RED")
+                            (beside
+                             (text "SHARKS-WITH-LASERBEAMS: " 16 "black")
+                            (scale 4/5 (overlay/align "middle" "bottom" waves (crop 0 25 50 50 laser-shark))))
+                             (text " Can kill you from farther away" 16 "RED")
+                             (beside
+                             (text "SHARK-NADO: " 16 "black")
+                            (scale 4/5 (overlay/align "middle" "bottom" waves laser-shark)))
+                             (text " Randomly drops random sharks from the sky, randomly" 16 "RED")
+                            
+                            (beside
+                             (text "Armored Horn " 16 "yellow")
+                             (scale 4/5 super-horn)
+                             (text " will protect you from any kind of shark" 16 "red"))
+                             (rectangle 50 10 "outline" CLEAR)
+                            (text "Change the difficulty with the arrow keys on the splash screen" 16 "RED")
+                            (rectangle 50 10 "outline" CLEAR)
+                            (text "Press <- key for previous page" 16 "RED")
+                            (text "Press SHIFT to return to Splash Screen" 18 "RED"))
+               250 220
+               BACKGROUND))))
 
 
 ;**********
 ; Build Boards
 ;**********
-(define STAGE-ONE
-  (list 14 18 24 29))
+(define (spout-list d)
+  (let ([l (stage_number d)])
+(cond ((eq? l 1) (list 10 25 30 45))
+      ((eq? l 2) (list 16 21 29 35 47))
+      ((eq? l 3) (list 12 25 34 48))
+      ((eq? l 4) (list 14 27 29 32 41))
+      ((eq? l 5) (list 13 25 37 49))
+      ((eq? l 6) (list 12 25 34 48))
+      ((eq? l 7) (list 16 21 29 35 47))
+      ((eq? l 8) (list 13 25 37 49))
+      ((eq? l 9) (list 14 18 24 29))
+      (else (list 14 18 24 29)))))
+
+;;recursive function that takes an x(width) and y value to fill with positions for tiles.
+;;makes a posn and appends to a list, calls func again
+(define (make-wide x y l)
+  (if (eq? 0 x) l
+      (make-wide (- x TILE_WIDTH) y (append (list (make-posn (- x (quotient TILE_WIDTH 2)) (+ y (quotient TILE_HEIGHT 2)))) l))))
+(define (build-posn-list x y l)
+  (if (< y TILE_HEIGHT) l
+      (build-posn-list x (- y TILE_HEIGHT) (make-wide x (- y TILE_HEIGHT) l))))
+
+(define (tile-posn-list d)
+  (build-posn-list (posn-x WINDOW) (- (posn-y WINDOW) TILE_HEIGHT) '()))
+
 ;@Stilsonkl: change to loop to create list
-(define STAGE-ONE-POSN
-  (list (make-posn 25 75) (make-posn 75 75) (make-posn 125 75) (make-posn 175 75) (make-posn 225 75) (make-posn 275 75) (make-posn 325 75) (make-posn 375 75)
-        (make-posn 25 150) (make-posn 75 150) (make-posn 125 150) (make-posn 175 150) (make-posn 225 150) (make-posn 275 150) (make-posn 325 150) (make-posn 375 150) 
-        (make-posn 25 225) (make-posn 75 225) (make-posn 125 225) (make-posn 175 225) (make-posn 225 225) (make-posn 275 225) (make-posn 325 225) (make-posn 375 225) 
-        (make-posn 25 300) (make-posn 75 300) (make-posn 125 300) (make-posn 175 300) (make-posn 225 300) (make-posn 275 300) (make-posn 325 300) (make-posn 375 300)))
 
 ;;builds a list of tiles based on pre-defined stage list
 ;makes list of t/f the size of x*y
 ;makes list of positions based on x*y and window size
 ;uses map to create list of tiles using list of t/f and posns
 (define (build-board diff-level)
-  (let* ([x 8]
-         [y 4])
+  (let* ([x (/ (posn-x WINDOW) TILE_WIDTH)]
+         [y (quotient (- (posn-y WINDOW) TILE_HEIGHT) TILE_HEIGHT)])
     (map (lambda (b) (make-tile b))
          (for/list ([i (in-range 0 (* x y))])
-           (if (member i STAGE-ONE) #t #f)))))
+           (if (member i (spout-list diff-level)) #t #f)))))
 
 ;************
 ; HUD
@@ -322,21 +593,21 @@
 ;;displays important player info: lives left, score, stage number,
 ;@Jacob-Phillips : possible a time counter?
 ;;
-(define HUD-AREA (rectangle 400 50 "solid" CLEAR))
+(define HUD-AREA (rectangle (posn-x WINDOW) 50 "solid" CLEAR))
 ;;(define HEART (circle 5 "solid" "pink"))
 (define HEART (freeze (scale 1/5 happy-walley)))
 ;;returns scene with info loaded on HUD-AREA
 (define (draw-HUD l diff sc)
-  ;create list of component and positions
+  ;;create list of component and positions
   (define hud-comp
-    (append (for/list ([i (in-range 0 l)])
+   (append (for/list ([i (in-range 0 l)])
                 HEART)
-             (list (text "STAGE:" 22 "black")
-                   (text (number->string (stage_number diff)) 22 "black")
-                   (cond
+           (list (text "STAGE:" 22 "black")
+                (text (number->string (stage_number diff)) 22 "black")
+               (cond
                      ((< diff 10) NORMAL)
                      ((< diff 100) LASER-SHARKS)
-                     ((< diff 1000) SHARKNADO))                      
+                    ((< diff 1000) SHARKNADO))                      
                    (text "SCORE:" 14 "Black")
                    (text (number->string sc) 14 "black"))))
   (define hud-posn
@@ -390,11 +661,16 @@
   ;;@Stilsonkl draw sharks using underlay instead of place-image
   ;;add components to list
   (define stage-comp
-    (append (append (append (list (stage-HUD st)) (place-tiles (stage-board st))) (for/list ([i (stage-Enemies st)])
-                             sharkfin) (list (scale (* 1/2 (stage_number diff)) (swim 'happy 'left))))))
+    (append (append (append (list rainbow (stage-HUD st)) (place-tiles (stage-board st)))
+                    (for/list ([i (stage-Enemies st)])
+                             (cond
+                               ((< diff 10) sharkfin)
+                               ((< diff 100) laser-shark)
+                               ((< diff 1000) sharkfin)))
+                    (list (scale 1/2 (swim 'happy (player-direction p)))))))
   (define stage-posn
-    (append (append (append (list (make-posn 200 37)) STAGE-ONE-POSN) (for/list ([i (stage-Enemies st)])
-                           (shark-p i)) (list START))))
+    (append (append (append (list (make-posn 50 75) (make-posn (quotient (posn-x WINDOW) 2) 18)) (tile-posn-list (stage_number diff)) (for/list ([i (stage-Enemies st)])
+                           (shark-p i)) (list START)))))
   ;;draw stage components
   (place-images stage-comp stage-posn BACKGROUND))
   
@@ -412,7 +688,7 @@
                                             'dead
                                             'won
                                             'lost)]
-                               [difficulty any/c]
+                               [difficulty (and/c natural-number/c (<=/c 1000))]
                                [Enemies (listof shark?)]
                                [Walley any/c]
                                [HUD any/c]
@@ -433,11 +709,13 @@
 
 (define-struct/contract world ([state (or/c 'splash_screen
                                             'playing
+                                            'won
                                             'lost
-                                            'help_screen)]
+                                            'help_screen
+                                            'help_screen_2)]
                                [player (or/c #f player?)]
-                               [difficulty any/c]
-                               [score any/c])
+                               [difficulty (and/c natural-number/c (<=/c 1000))]
+                               [score (and/c natural-number/c (>=/c 0))])
   #:transparent)
 
 ;**************
@@ -451,7 +729,7 @@
   (cond
     ;;AT SPLASH SCREEN
 
-    ((and (pad=? pe " ") (equal? (world-state s) 'splash_screen)) (make-world 'playing (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe " ") (equal?  (world-state s) 'splash_screen)) (make-world 'playing (world-player s) (world-difficulty s) (world-score s)))
     ((and (pad=? pe "rshift") (equal? (world-state s) 'splash_screen)) (make-world 'help_screen (world-player s) (world-difficulty s) (world-score s)))
     ((and (pad=? pe "shift") (equal? (world-state s) 'splash_screen)) (make-world 'help_screen (world-player s) (world-difficulty s) (world-score s)))
     ((and (pad=? pe "up") (equal? (world-state s) 'splash_screen))(cond
@@ -464,11 +742,21 @@
                                                                     ((eq? (world-difficulty s) 100) (make-world 'splash_screen (world-player s) 1 (world-score s)))))
     ;;AT HELP SCREEN
     ((and (pad=? pe "rshift") (equal? (world-state s) 'help_screen)) (make-world 'splash_screen (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "right") (equal? (world-state s) 'help_screen)) (make-world 'help_screen_2 (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "left") (equal? (world-state s) 'help_screen_2)) (make-world 'help_screen (world-player s) (world-difficulty s) (world-score s)))
     ;;AT PLAYING SCREEN
-    ((and (pad=? pe "rshift") (equal? (world-state s) 'playing)) (make-world 'splash_screen (world-player s) (world-difficulty s) (world-score s)))
-    ((and (pad=? pe "shift") (equal? (world-state s) 'playing)) (make-world 'splash_screen (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "rshift") (equal? (world-state s) 'playing)) (render-splashscreen s))
+    ((and (pad=? pe "shift") (equal? (world-state s) 'playing)) (render-splashscreen s))
     ((and (pad=? pe "right") (equal? (world-state s) 'playing)) (BEHOLD-Stage (world-difficulty s) (move_walley (world-player s) pe) (world-score s)))
     ((and (pad=? pe "left") (equal? (world-state s) 'playing)) (BEHOLD-Stage (world-difficulty s) (move_walley (world-player s) pe) (world-score s)))
+    ;;test for win/stage prog- w for win-test, d for die test
+    ((and (pad=? pe "w") (equal? (world-state s) 'playing) (= (world-difficulty s) 900) (make-world 'won (world-player s) (world-difficulty s) (world-score s))))
+    ((and (pad=? pe "w") (equal? (world-state s) 'playing)) (make-world 'playing (world-player s) (next-stage (world-difficulty s)) (+ (world-score s) 100)))
+    ;;put player back at Start, decrease lives
+    ((and (pad=? pe "d") (equal? (world-state s) 'playing) (= (player-lives (world-player s)) 0)) (make-world 'lost (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "d") (equal? (world-state s) 'playing)) (make-world 'playing
+                                                                        (make-player (player-state (world-player s)) START "left" (- (player-lives (world-player s)) 1))
+                                                                        (world-difficulty s) (world-score s)))
     (else s)))
 
  ;;make worlds
@@ -484,9 +772,10 @@
   (cond
     ((equal? (world-state s) 'splash_screen) (render-splashscreen s))
     ((equal? (world-state s) 'help_screen) (render-helpscreen s))
+    ((equal? (world-state s) 'help_screen_2) (render-helpscreen s))
     ((equal? (world-state s) 'playing) (BEHOLD-Stage (world-difficulty s) (world-player s) (world-score s)))
-    ((equal? (world-state s) 'lost) (place-image SEA 150 150 BACKGROUND))
-    (else (place-image ELSE 50 50 BACKGROUND))))
+    ((equal? (world-state s) 'lost) (render-splashscreen s))
+    (else (render-splashscreen s))))
 
 
 ;;***********
