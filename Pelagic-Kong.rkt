@@ -551,15 +551,15 @@
 ;**********
 (define (spout-list d)
   (let ([l (stage_number d)])
-(cond ((eq? l 1) (list 10 25 30 45))
-      ((eq? l 2) (list 16 21 29 35 47))
-      ((eq? l 3) (list 12 25 34 48))
-      ((eq? l 4) (list 14 27 29 32 41))
-      ((eq? l 5) (list 13 25 37 49))
-      ((eq? l 6) (list 12 25 34 48))
+(cond ((eq? l 1) (list 14 19 21 25 32 40 46))
+      ((eq? l 2) (list 17 21 28 35 41 46))
+      ((eq? l 3) (list 19 25 30 39 45))
+      ((eq? l 4) (list 15 24 26 33 37 42 48))
+      ((eq? l 5) (list 13 17 25 33 37 44 45 46))
+      ((eq? l 6) (list 12 18 23 36 45))
       ((eq? l 7) (list 16 21 29 35 47))
       ((eq? l 8) (list 13 25 37 49))
-      ((eq? l 9) (list 14 18 24 29))
+      ((eq? l 9) (list 14 18 21 29 33 46))
       (else (list 14 18 24 29)))))
 
 ;;recursive function that takes an x(width) and y value to fill with positions for tiles.
@@ -583,9 +583,10 @@
 (define (build-board diff-level)
   (let* ([x (/ (posn-x WINDOW) TILE_WIDTH)]
          [y (quotient (- (posn-y WINDOW) TILE_HEIGHT) TILE_HEIGHT)])
-    (map (lambda (b) (make-tile b))
+    (map (lambda (b p) (make-tile b p))
          (for/list ([i (in-range 0 (* x y))])
-           (if (member i (spout-list diff-level)) #t #f)))))
+           (if (member i (spout-list diff-level)) #t #f))
+         (tile-posn-list diff-level))))
 
 ;************
 ; HUD
@@ -624,7 +625,8 @@
 ; Tile Struct
 ;************
 ;;defines struct for tiles
-(define-struct/contract tile ([up? boolean?])
+(define-struct/contract tile ([up? boolean?]
+                              [position any/c])
   #:transparent)
 
 ;;map to determine what image tile to place on the background based on list passed from build-board
