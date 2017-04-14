@@ -128,6 +128,7 @@
             50 50
             "red"))
 
+
 ;;Super-Powers
 
 (define ping
@@ -248,8 +249,8 @@
               (make-pen "violet" 5 "solid" "butt" "round"))
          0 22 13 2/3 ;crop
               40 65 0 0
-              (make-pen "Medium Aquamarine" 5 "solid" "butt" "round"))
-         ))))))))
+              (make-pen "Medium Aquamarine" 5 "solid" "butt" "round"))))))))))
+
 
 ;****************
 ;;Walley Character images and draw-functions
@@ -669,10 +670,13 @@
                                ((< diff 10) sharkfin)
                                ((< diff 100) laser-shark)
                                ((< diff 1000) sharkfin)))
+
                     (list (scale 1/2 (swim 'happy (player-direction p)))))))
+                    
   (define stage-posn
     (append (append (append (list (make-posn 50 75) (make-posn (quotient (posn-x WINDOW) 2) 18)) (tile-posn-list (stage_number diff)) (for/list ([i (stage-Enemies st)])
                            (shark-p i)) (list START)))))
+
   ;;draw stage components
   (place-images stage-comp stage-posn BACKGROUND))
   
