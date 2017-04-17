@@ -30,70 +30,118 @@
 (define SEAFOAM (make-color 104 220 171 85))
 ;;(define SEAFOAM "CadetBlue")
 
-(define spout
-  (let ([points (list (make-pulled-point 0 0 22 58 1.7 25)
-                   (make-pulled-point 1/4 20 3 30 2/3 -70)
-                   (make-pulled-point 1/2 45 22 23 1/2 -45)
-                   (make-pulled-point 1/2 70 47 29 1/4 20)
-                   (make-pulled-point 1.7 -25 28 58 0 0))])
-    (overlay/align "middle" "bottom"
-     (scale 7/8 (polygon points "solid" SEAFOAM))
-     (underlay/align/offset "middle" "middle"
-                           (overlay/align "middle" "bottom"
-                                          (polygon points "solid" SEAFOAM)
-                                          
-                                          (flip-horizontal (scale 7/8(polygon points "solid" SEAFOAM)))
-                                          (rotate 9 (polygon points "solid" "white"))
-                                          (rotate -9 (polygon points "solid" "white"))
-                                          (flip-horizontal (polygon points "solid" "SeaGreen")))
-                           0 32
-                           (polygon points "solid" SEAFOAM))
-     
-     (scale 7/8 (rotate 9 (polygon points "solid" "white")))
-     (scale 7/8 (rotate -9 (polygon points "solid" "white")))
-     (scale 9/9(rotate 10 (polygon points "solid" "SeaGreen")))
-     (scale 9/9(rotate -10 (polygon points "solid" "SeaGreen")))
-     )))
+(define (key d)
+  (let ([key (list(make-posn 0 0)
+                (make-posn 2 -2)
+                (make-posn 10 -2)
+                (make-posn 12 0)
+                (make-posn 12 10)
+                (make-posn 10 12)
+                (make-posn 2 12)
+                (make-posn 0 10))])
+  (overlay/align "middle" "top"
+                 (overlay (rotate (cond ((eq? d 'down) 180)
+                                        ((eq? d 'right) -90)
+                                        ((eq? d 'left) 90)
+                                        (else 0))
+                                  (isosceles-triangle 7 35 "solid" "Black"))
+                          (polygon key "solid" "lightgray") (polygon key "outline" "Dimgray"))
+                 (scale 1.4 (polygon key "solid" "gray")))))
 
-(define waves
-  (scene+polygon
-  (scene+polygon (polygon (list (make-posn 0 17)
+(define spout
+  (let* ([drop (list (make-pulled-point 1/2 -30 15 10 1/2 -30)
+                   (make-pulled-point 1/4 60 22 40 1/2 -80)
+                   (make-pulled-point 1/2 80 6 28 1/4 -15))]
+        [mini-drop (list (make-pulled-point 1/2 -30 15 10 1/2 -30)
+                   (make-pulled-point 1/4 90 17 40 1/2 -60)
+                   (make-pulled-point 1/4 50 13 28 1/4 0))])
+  (overlay/align/offset
+   "middle" "middle"
+   (above/align "middle"
+                ;;most-upper
+                (overlay/align/offset
+                 "middle" "bottom"
+                 (scale 1/3 (flip-horizontal (rotate 120 (overlay/align/offset
+                                                          "middle" "middle"
+                                                          (rotate -15 (scale 1/2 (polygon drop "solid" "Honeydew")))
+                                                          -3 -6
+                                                          (scale 1 (polygon drop "solid" "SeaGreen"))))))
+                 10 -2
+                 (scale 1/2 (rotate 122 (overlay/align/offset
+                                         "middle" "middle"
+                                         (rotate -10 (scale 1/2 (polygon drop "solid" "Honeydew")))
+                                         -3 -4
+                                         (scale 1 (polygon drop "solid" "SeaGreen"))))))
+                ;;mid-upper
+                (overlay/align/offset
+                 "middle" "bottom"
+                 (scale 3/4 (flip-horizontal (rotate 110 (overlay/align/offset
+                                                          "middle" "middle"
+                                                          (rotate -15 (scale 1/2 (polygon mini-drop "solid" "Honeydew")))
+                                                          -3 -6
+                                                          (scale 1 (polygon mini-drop "solid" "LightSeaGreen"))))))
+                 23 1
+                 (scale 3/4 (rotate 100 (overlay/align/offset
+                                         "middle" "middle"
+                                         (rotate -10 (scale 1/2 (polygon mini-drop "solid" "Honeydew")))
+                                         -3 -4
+                                         (scale 1 (polygon mini-drop "solid" "LightSeaGreen"))))))
+                ;lower
+                (beside
+                 ;left lower
+                 (overlay/align "right" "top"
+                                (scale 1 (flip-horizontal (rotate 35 (overlay/align/offset
+                                                                      "middle" "middle"
+                                                                      (rotate -15 (scale 1/2 (polygon drop "solid" "Honeydew")))
+                                                                      -3 -6
+                                                                      (scale 1 (polygon drop "solid" "SeaGreen"))))))
+                                (scale 1.2 (flip-horizontal (rotate 80 (overlay/align/offset
+                                                                        "middle" "middle"
+                                                                        (rotate -10 (scale/xy 1/3 2/3 (polygon drop "solid" "Honeydew")))
+                                                                        -4 -5
+                                                                        (scale 1 (polygon drop "solid" "LightSeaGreen")))))))
+                 ;right lower
+                 (overlay/align "left" "top"
+                                (scale/xy 3/4 1 (rotate 50 (overlay/align/offset
+                                                            "middle" "middle"
+                                                            (rotate -30 (scale 1/2 (polygon drop "solid" "Honeydew")))
+                                                            -4 -7
+                                                            (scale 1 (polygon drop "solid" "SeaGreen")))))
+                                (scale 1 (rotate 70 (overlay/align/offset "middle" "middle"
+                                                                          (rotate -15 (scale 3/5 (polygon drop "solid" "Honeydew")))
+                                                                          -3 -6
+                                                                          (scale 1 (polygon drop "solid" "LightSeaGreen"))))))))
+   2 32
+   ;stem
+   (polygon (list (make-pulled-point 1/4 60 15 10 1/4 -60)
+                  (make-pulled-point 1/4 0 18 60 1/2 0)
+                  (make-pulled-point 1/2 0 12 60 1/2 0))
+            "solid" "LightSeaGreen"))))
+
+(define FLOOR_TILE
+  (let ([waves (list (make-posn 0 17)
                                 (make-pulled-point 1/2 -30 9 10 1/2 30)
                                 (make-pulled-point 1/2 -30 27 11 1/2 30)
                                 (make-pulled-point 1/2 -30 46 8 1/2 30)
                                 (make-posn 50 17)
                                 (make-posn 50 25)
-                                (make-posn 0 25))
-                          "solid"
-                          "SeaGreen")
-   (list (make-posn 0 8)
-                       (make-pulled-point 1/2 -30 11 5 1/2 30)
-                       (make-pulled-point 1/2 -30 29 5 1/2 30)
-                       (make-pulled-point 1/2 -30 47 2 1/2 30)
-                       (make-posn 50 8)
-                       (make-posn 50 25)
-                       (make-posn 0 25))
-                  "solid"
-                  "White")
-  (list (make-posn 0 9)
-                       (make-pulled-point 1/2 -30 9 6 1/2 30)
-                       (make-pulled-point 1/2 -30 27 6 1/2 30)
-                       (make-pulled-point 1/2 -30 46 3 1/2 30)
-                       (make-posn 50 9)
-                       (make-posn 50 25)
-                       (make-posn 0 25))
-                  "solid"
-                  "Medium AquaMarine"))
-
-(define FLOOR_TILE
-  (place-image waves
-               25 67
-               (rectangle 50 75 "outline" CLEAR)))
+                                (make-posn 0 25))])
+  (place-image
+   (overlay/align/offset "middle" "top"
+    (overlay/align/offset "middle" "bottom"
+                  (polygon waves "solid" "Medium Aquamarine")
+                  0 -1
+                  (flip-horizontal (polygon waves "solid" "White")))
+    0 -1
+    (polygon waves "solid" "SeaGreen"))
+    25 67
+   (rectangle 50 75 "outline" CLEAR))))
 
 (define SPOUT_TILE
   (underlay/align "middle" "bottom"
                  spout
                  FLOOR_TILE))
+
 
 ;;Shark
 (define sharkfin
@@ -127,7 +175,6 @@
             20 50
             50 50
             "red"))
-
 
 ;;Super-Powers
 
@@ -209,48 +256,45 @@
 
 ;;Rainbow
 (define rainbow
-  (freeze
-         (place-image ping
-                                   25 20
-                                   (place-image ping
-                                                51 30
-                                                (place-image ping
-                                                             42 45
-                                                             (place-image (circle 9 "solid" "white")
-                                                                          45 65
-                                                                          (place-image (circle 10 "solid" "white")
-                                                                                       60 65
-                                                                                       (place-image (circle 9 "solid" "white")
-                                                                                                    75 65
-                                                                                                    (scene+curve
-         (scene+curve
-          (scene+curve
-           (scene+curve
-            (scene+curve
-             (scene+curve
-              (scene+curve (rectangle 100 75 "solid" CLEAR)
-                           0 20 25 2/3 ;red
-                           70 65 0 0
-                           (make-pen "red" 5 "solid" "butt" "round"))
-              0 20 23 2/3 ;orange
-              65 65 0 0
-              (make-pen "orange" 5 "solid" "butt" "round"))
-             0 20 21 2/3 ;yellow
-              60 65 0 0
-              (make-pen "yellow" 5 "solid" "butt" "round"))
-            0 20 19 2/3 ;green
-              55 65 0 0
-              (make-pen "green" 5 "solid" "butt" "round"))
-           0 21 17 2/3 ;blue
-              50 65 0 0
-              (make-pen "blue" 5 "solid" "butt" "round"))
-          0 21 15 2/3 ;violet
-              45 65 0 0
-              (make-pen "violet" 5 "solid" "butt" "round"))
-         0 22 13 2/3 ;crop
-              40 65 0 0
-              (make-pen "Medium Aquamarine" 5 "solid" "butt" "round"))))))))))
-
+  (place-images (list ping (rotate 40 ping) ping)
+                (list (make-posn 25 22) (make-posn 45 48) (make-posn 53 31))
+                (place-image
+                (overlay/offset (beside/align "middle"
+                                             (circle 8 "solid" "white")
+                                             (circle 8 "solid" "white"))
+                               11 -2
+                               (beside/align "middle"
+                                             (circle 8 "solid" "white")
+                                             (circle 8 "solid" "white")))                                      
+               57 65
+               (scene+curve
+                (scene+curve
+                 (scene+curve
+                  (scene+curve
+                   (scene+curve
+                    (scene+curve
+                     (scene+curve (rectangle 100 75 "solid" CLEAR)
+                                  0 20 25 2/3 ;red
+                                  70 65 0 0
+                                  (make-pen "red" 5 "solid" "butt" "round"))
+                     0 20 23 2/3 ;orange
+                     65 65 0 0
+                     (make-pen "orange" 5 "solid" "butt" "round"))
+                    0 20 21 2/3 ;yellow
+                    60 65 0 0
+                    (make-pen "yellow" 5 "solid" "butt" "round"))
+                   0 20 19 2/3 ;green
+                   55 65 0 0
+                   (make-pen "green" 5 "solid" "butt" "round"))
+                  0 21 17 2/3 ;blue
+                  50 65 0 0
+                  (make-pen "blue" 5 "solid" "butt" "round"))
+                 0 21 15 2/3 ;violet
+                 45 65 0 0
+                 (make-pen "violet" 5 "solid" "butt" "round"))
+                0 22 13 2/3 ;crop
+                40 65 0 0
+                (make-pen "Medium Aquamarine" 5 "solid" "butt" "round")))))
 
 ;****************
 ;;Walley Character images and draw-functions
@@ -477,9 +521,9 @@
                             (rectangle 50 30 "outline" CLEAR)
                             (beside
                              (text "Use the  " 17 "red")
-                             (square 25 "solid" "gray")
+                             (scale 1.5 (key 'left))
                              (text "  and " 17 "RED")
-                             (square 25 "solid" "gray")
+                             (scale 1.5 (key 'right))
                              (text "  to make " 17 "RED")
                              (scale 1/3 happy-walley)
                              (text "  swim left and right." 17 "RED")
@@ -488,16 +532,16 @@
                              (text "Reach the  " 17 "red")
                              (scale 1/2 rainbow)
                              (text "  without getting eaten by a " 17 "RED")
-                             (scale 4/5 (overlay/align "middle" "bottom" waves (crop 0 25 25 50 sharkfin))))
+                             (scale 1 (overlay/align "middle" "bottom" (crop 0 25 35 50 FLOOR_TILE) (crop 0 25 25 50 sharkfin))))
                             (beside
                               (text "Use the " 17 "RED")
-                              (square 25 "solid" "gray")
+                              (scale 1.5 (key 'up))
                              (text "  and " 17 "RED")
-                             (square 25 "solid" "gray")
+                             (scale 1.5 (key 'down))
                              (text "  to make " 17 "RED")
                              (scale 1/3 happy-walley)
                              (text " swim up & down the " 17 "RED")
-                             (scale 1/2 spout))
+                             (scale 1/2 SPOUT_TILE))
                             (beside
                               (text "Catching a " 17 "RED")
                              (scale 1/2 (rotate -30 fish))
@@ -507,9 +551,12 @@
                              (text "Finding the " 17 "RED")
                              (scale 2/3 super-horn)
                              (text "  will protect you from the " 17 "RED")
-                             (scale 4/5 (overlay/align "middle" "bottom" waves (crop 0 25 25 50 sharkfin))))
+                             (scale 1 (overlay/align "middle" "bottom" (crop 0 25 35 50 FLOOR_TILE) (crop 0 25 25 50 sharkfin))))
                             (rectangle 50 30 "outline" CLEAR)
-                            (text "Press -> key for next page" 18 "RED")
+                            (beside
+                             (text "Press" 18 "RED")
+                              (scale 1.5(key 'right))
+                               (text "for next page" 18 "RED"))
                             (rectangle 50 30 "outline" CLEAR)
                             (text "Press SHIFT to return to Splash Screen" 20 "RED"))
                             
@@ -523,25 +570,32 @@
                             (rectangle 50 40 "outline" CLEAR))
                             (beside
                              (text "NORMAL: " 16 "black")
-                            (scale 4/5 (overlay/align "middle" "bottom" waves (crop 0 25 25 50 sharkfin))))
+                            (scale 1 (overlay/align "middle" "bottom" (crop 0 25 35 50 FLOOR_TILE) (crop 0 25 25 50 sharkfin))))
                              (text " Will kill you if you get too close" 16 "RED")
                             (beside
                              (text "SHARKS-WITH-LASERBEAMS: " 16 "black")
-                            (scale 4/5 (overlay/align "middle" "bottom" waves (crop 0 25 50 50 laser-shark))))
+                            (scale 1 (overlay/align "left" "bottom" (crop 0 25 35 50 FLOOR_TILE) (crop 0 25 50 50 laser-shark))))
                              (text " Can kill you from farther away" 16 "RED")
                              (beside
                              (text "SHARK-NADO: " 16 "black")
-                            (scale 4/5 (overlay/align "middle" "bottom" waves laser-shark)))
+                            (scale 1 (overlay/align "middle" "bottom" (crop 0 25 50 50 FLOOR_TILE) (crop 0 25 50 50 sharkfin))))
                              (text " Randomly drops random sharks from the sky, randomly" 16 "RED")
-                            
                             (beside
                              (text "Armored Horn " 16 "yellow")
                              (scale 4/5 super-horn)
                              (text " will protect you from any kind of shark" 16 "red"))
                              (rectangle 50 10 "outline" CLEAR)
-                            (text "Change the difficulty with the arrow keys on the splash screen" 16 "RED")
+                             (beside 
+                            (text "Change the difficulty with the " 16 "RED")
+                            (scale 1.5 (key 'up))
+                             (text "  and " 17 "RED")
+                             (scale 1.5 (key 'down))
+                             (text "  on the splash-screen." 17 "RED"))
                             (rectangle 50 10 "outline" CLEAR)
-                            (text "Press <- key for previous page" 16 "RED")
+                            (beside
+                             (text "Press" 18 "RED")
+                              (scale 1.5(key 'left))
+                               (text "for previous page" 18 "RED"))
                             (text "Press SHIFT to return to Splash Screen" 18 "RED"))
                250 220
                BACKGROUND))))
@@ -616,10 +670,10 @@
     (append (for/list ([i (in-range 1 (+ l 1))])
                (make-posn (* i 30) 20))
             (list (make-posn 175 20)
-                  (make-posn 225 20)
-                  (make-posn 200 40)
-                  (make-posn 325 20)
-                  (make-posn 370 20))))
+                  (make-posn 250 20)
+                  (make-posn 250 40)
+                  (make-posn 375 20)
+                  (make-posn 425 20))))
   (place-images  hud-comp hud-posn HUD-AREA))
 
 ;************
@@ -670,13 +724,10 @@
                                ((< diff 10) sharkfin)
                                ((< diff 100) laser-shark)
                                ((< diff 1000) sharkfin)))
-
                     (list (scale 1/2 (swim 'happy (player-direction p)))))))
-                    
   (define stage-posn
     (append (append (append (list (make-posn 50 75) (make-posn (quotient (posn-x WINDOW) 2) 18)) (tile-posn-list (stage_number diff)) (for/list ([i (stage-Enemies st)])
                            (shark-p i)) (list START)))))
-
   ;;draw stage components
   (place-images stage-comp stage-posn BACKGROUND))
   
