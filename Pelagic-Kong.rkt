@@ -174,7 +174,7 @@
              (make-pen "black" 4 "solid" "round" "round"))
             20 50
             50 50
-            "red"))
+            "orange"))
 
 ;;Super-Powers
 
@@ -299,7 +299,7 @@
 ;****************
 ;;Walley Character images and draw-functions
 ;****************
-(define (draw-walley mood)
+(define (draw-walley mood t)
    ;;face
   (define happy-face
       (add-line
@@ -378,7 +378,8 @@
 
   ;;create closed polygon using list of posn's(x y), points in clockwise order
   (define tail
-    (rotate 30 
+   (rotate (cond ((odd? t) 30)
+                  (else 60))                                           
             (polygon (list (make-pulled-point 1/2 10 30 10 1/2 -10) ;;middle tail point
                            (make-pulled-point 1/2 45 60 10 3/4 45) ;;right tail point
                            (make-pulled-point 1/2 -10 40 70 1/2 -20) ;;body tail point
@@ -415,14 +416,14 @@
 
 ;;constants for walley
 (define happy-walley
- (draw-walley 'swimming))
+ (draw-walley 'swimming 0))
 (define sad-walley
- (draw-walley 'dead))
+ (draw-walley 'dead 0))
 
-(define (swim mood direction)
+(define (swim mood direction time)
   (if (eq? direction "left")
-      (flip-horizontal (draw-walley mood))
-      (draw-walley mood)))
+      (flip-horizontal (draw-walley mood time))
+      (draw-walley mood time)))
 
 (define (move_walley p direction)
   (let ((posn-offset-x (if (eq? direction "right") 10 -10)))
@@ -430,6 +431,15 @@
                     (make-posn (+ (posn-x (player-position p)) posn-offset-x) (posn-y (player-position p)))
                     direction
                     (player-lives p))))
+
+;;Funtion to scroll image, only changes x value based on time and speed args
+(define (scroll-image t s)
+  (cond ((< t 500) (* (- t 20) (ceiling (/ s 2))))
+        ((< t 1000) (* (- t 520) (ceiling (/ s 2))))
+        ((< t 1500) (* (- t 1020) (ceiling (/ s 2))))
+        ((< t 2000) (* (- t 1520) (ceiling (/ s 2))))
+        (else (- t 550))))
+                  
 
 ;;**********
 ;;  Enemy Struct
@@ -444,11 +454,11 @@
 
 ;;draw-enemies funtion takes the difficulty setting of the level to create a list of shark items
 ;;f is number of floors in stage
-  (define (draw-enemies d n)
+  (define (draw-enemies d n t)
     (let ([f 5]) 
     (map (lambda (p) (make-shark 'killing p d f))
          (for/list ([i (in-range 0 (- f 2))])
-           (make-posn (* 50 i) (* (+ i 2) (/ (posn-y START) f)))))))
+           (make-posn (+ (* 50 i) (scroll-image t n)) (* (+ i 2) (/ (posn-y START) f)))))))
      
   
 (define (screen_shot s)
@@ -481,7 +491,9 @@
       LASER-SHARKS
       SHARKNADO
       HIGHLIGHT
-      (text "Press shift for help" 16 "Blue"))
+      (text "Press shift for help" 16 "Blue")
+     (draw-walley 'swimming (world-time s))
+      )
      (list (make-posn 250 20) ;title
            (make-posn 250 110) ;game status box
            (make-posn 250 160);diff
@@ -489,7 +501,9 @@
            (make-posn 250 190);l
            (make-posn 250 205);sharknado
            (highlight_difficulty (world-difficulty s))
-           (make-posn 250 235)) ;help text
+           (make-posn 250 235);help text
+           (make-posn (scroll-image (world-time s) 2) 320))
+     
      BACKGROUND))
 
 ;;function to highlight difficulty level
@@ -631,7 +645,6 @@
 (define (tile-posn-list d)
   (build-posn-list (posn-x WINDOW) (- (posn-y WINDOW) TILE_HEIGHT) '()))
 
-;@Stilsonkl: change to loop to create list
 
 ;;builds a list of tiles based on pre-defined stage list
 ;makes list of t/f the size of x*y
@@ -714,9 +727,9 @@
 ;;BEHOLD-Stage function that takes info from the player in order to build the stage
 ;  for game-play
 ;;
-(define (BEHOLD-Stage diff p sc)
+(define (BEHOLD-Stage diff p sc t)
   (define st 
-  (make-stage 'start diff (draw-enemies diff (stage_number diff)) (swim (player-state p) (player-direction p)) (draw-HUD (player-lives p) diff sc) (build-board diff)))
+  (make-stage 'start diff (draw-enemies diff (stage_number diff) t) (swim (player-state p) (player-direction p) t) (draw-HUD (player-lives p) diff sc) (build-board diff)))
   ;;@Stilsonkl draw sharks using underlay instead of place-image
   ;;add components to list
   (define stage-comp
@@ -726,7 +739,7 @@
                       (cond ((< diff 10) sharkfin)
                             ((< diff 100) laser-shark)
                             ((< diff 1000) sharkfin)))
-            (list (scale 1/2 (stage-Walley st)))))
+            (list (scale 1/2 (swim (player-state p) (player-direction p) t)))))
   (define stage-posn
     (append (list (make-posn 50 75) (make-posn (quotient (posn-x WINDOW) 2) 18))
             (tile-posn-list (stage_number diff))
@@ -775,11 +788,15 @@
                                             'lost
                                             'help_screen
                                             'help_screen_2)]
+                               [time (and/c natural-number/c (<=/c 100000))]
                                [player (or/c #f player?)]
                                [difficulty (and/c natural-number/c (<=/c 1000))]
                                [score (and/c natural-number/c (>=/c 0))])
   #:transparent)
-
+(define (advance-time s)
+  (cond ((eq? (world-state s) 'splash_screen)
+         (make-world (world-state s) (if (= 500 (world-time s)) 0 (add1 (world-time s))) (world-player s) (world-difficulty s) (world-score s)))
+        (else (make-world (world-state s) (add1 (world-time s)) (world-player s) (world-difficulty s) (world-score s)))))
 ;**************
 ;Pad input
 ;**************
@@ -791,41 +808,41 @@
   (cond
     ;;AT SPLASH SCREEN
 
-    ((and (pad=? pe " ") (equal?  (world-state s) 'splash_screen)) (make-world 'playing (world-player s) (world-difficulty s) (world-score s)))
-    ((and (pad=? pe "rshift") (equal? (world-state s) 'splash_screen)) (make-world 'help_screen (world-player s) (world-difficulty s) (world-score s)))
-    ((and (pad=? pe "shift") (equal? (world-state s) 'splash_screen)) (make-world 'help_screen (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe " ") (equal?  (world-state s) 'splash_screen)) (make-world 'playing 0 (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "rshift") (equal? (world-state s) 'splash_screen)) (make-world 'help_screen 0 (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "shift") (equal? (world-state s) 'splash_screen)) (make-world 'help_screen 0 (world-player s) (world-difficulty s) (world-score s)))
     ((and (pad=? pe "up") (equal? (world-state s) 'splash_screen))(cond
-                                                                    ((eq? (world-difficulty s) 1) (make-world 'splash_screen (world-player s) 100 (world-score s)))
-                                                                    ((eq? (world-difficulty s) 10) (make-world 'splash_screen (world-player s) 1 (world-score s)))
-                                                                    ((eq? (world-difficulty s) 100) (make-world 'splash_screen (world-player s) 10 (world-score s)))))
+                                                                    ((eq? (world-difficulty s) 1) (make-world 'splash_screen (world-time s) (world-player s) 100 (world-score s)))
+                                                                    ((eq? (world-difficulty s) 10) (make-world 'splash_screen (world-time s) (world-player s) 1 (world-score s)))
+                                                                    ((eq? (world-difficulty s) 100) (make-world 'splash_screen (world-time s) (world-player s) 10 (world-score s)))))
     ((and (pad=? pe "down") (equal? (world-state s) 'splash_screen))(cond
-                                                                    ((eq? (world-difficulty s) 1) (make-world 'splash_screen (world-player s) 10 (world-score s)))
-                                                                    ((eq? (world-difficulty s) 10) (make-world 'splash_screen (world-player s) 100 (world-score s)))
-                                                                    ((eq? (world-difficulty s) 100) (make-world 'splash_screen (world-player s) 1 (world-score s)))))
+                                                                    ((eq? (world-difficulty s) 1) (make-world 'splash_screen (world-time s) (world-player s) 10 (world-score s)))
+                                                                    ((eq? (world-difficulty s) 10) (make-world 'splash_screen (world-time s) (world-player s) 100 (world-score s)))
+                                                                    ((eq? (world-difficulty s) 100) (make-world 'splash_screen (world-time s) (world-player s) 1 (world-score s)))))
     ;;AT HELP SCREEN
-    ((and (pad=? pe "rshift") (equal? (world-state s) 'help_screen)) (make-world 'splash_screen (world-player s) (world-difficulty s) (world-score s)))
-    ((and (pad=? pe "shift") (equal? (world-state s) 'help_screen)) (make-world 'splash_screen (world-player s) (world-difficulty s) (world-score s)))
-    ((and (pad=? pe "rshift") (equal? (world-state s) 'help_screen_2)) (make-world 'splash_screen (world-player s) (world-difficulty s) (world-score s)))
-    ((and (pad=? pe "shift") (equal? (world-state s) 'help_screen_2)) (make-world 'splash_screen (world-player s) (world-difficulty s) (world-score s)))
-    ((and (pad=? pe "right") (equal? (world-state s) 'help_screen)) (make-world 'help_screen_2 (world-player s) (world-difficulty s) (world-score s)))
-    ((and (pad=? pe "left") (equal? (world-state s) 'help_screen_2)) (make-world 'help_screen (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "rshift") (equal? (world-state s) 'help_screen)) (make-world 'splash_screen 0 (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "shift") (equal? (world-state s) 'help_screen)) (make-world 'splash_screen 0 (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "rshift") (equal? (world-state s) 'help_screen_2)) (make-world 'splash_screen 0 (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "shift") (equal? (world-state s) 'help_screen_2)) (make-world 'splash_screen 0 (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "right") (equal? (world-state s) 'help_screen)) (make-world 'help_screen_2 0 (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "left") (equal? (world-state s) 'help_screen_2)) (make-world 'help_screen 0 (world-player s) (world-difficulty s) (world-score s)))
     ;;AT PLAYING SCREEN
     ((and (pad=? pe "rshift") (equal? (world-state s) 'playing)) (render-splashscreen s))
     ((and (pad=? pe "shift") (equal? (world-state s) 'playing)) (render-splashscreen s))
-    ((and (pad=? pe "right") (equal? (world-state s) 'playing)) (make-world 'playing
+    ((and (pad=? pe "right") (equal? (world-state s) 'playing)) (make-world 'playing (world-time s)
                                                                             (move_walley (world-player s) "right")
                                                                             (world-difficulty s)
                                                                             (world-score s)))
-    ((and (pad=? pe "left") (equal? (world-state s) 'playing)) (make-world 'playing
+    ((and (pad=? pe "left") (equal? (world-state s) 'playing)) (make-world 'playing (world-time s)
                                                                            (move_walley (world-player s) "left")
                                                                            (world-difficulty s) 
                                                                            (world-score s)))
     ;;test for win/stage prog- w for win-test, d for die test
-    ((and (pad=? pe "w") (equal? (world-state s) 'playing) (= (world-difficulty s) 900) (make-world 'won (world-player s) (world-difficulty s) (world-score s))))
-    ((and (pad=? pe "w") (equal? (world-state s) 'playing)) (make-world 'playing (world-player s) (next-stage (world-difficulty s)) (+ (world-score s) 100)))
+    ((and (pad=? pe "w") (equal? (world-state s) 'playing) (= (world-difficulty s) 900) (make-world 'won 0 (world-player s) (world-difficulty s) (world-score s))))
+    ((and (pad=? pe "w") (equal? (world-state s) 'playing)) (make-world 'playing 0 (world-player s) (next-stage (world-difficulty s)) (+ (world-score s) 100)))
     ;;put player back at Start, decrease lives
-    ((and (pad=? pe "d") (equal? (world-state s) 'playing) (= (player-lives (world-player s)) 0)) (make-world 'lost (world-player s) (world-difficulty s) (world-score s)))
-    ((and (pad=? pe "d") (equal? (world-state s) 'playing)) (make-world 'playing
+    ((and (pad=? pe "d") (equal? (world-state s) 'playing) (= (player-lives (world-player s)) 0)) (make-world 'lost 0 (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "d") (equal? (world-state s) 'playing)) (make-world 'playing 0
                                                                         (make-player (player-state (world-player s)) START "left" (- (player-lives (world-player s)) 1))
                                                                         (world-difficulty s) (world-score s)))
     (else s)))
@@ -833,7 +850,7 @@
  ;;make worlds
 ;;make-initial-world(create the splash_screen)
 (define (make-water-world)
-  (make-world 'splash_screen (make-player 'swimming START "left" 3) 1 0))
+  (make-world 'splash_screen 0 (make-player 'swimming START "left" 3) 1 0))
 
 ;;render-world
 ;;draws the world based on the state of the world
@@ -844,7 +861,7 @@
     ((equal? (world-state s) 'splash_screen) (render-splashscreen s))
     ((equal? (world-state s) 'help_screen) (render-helpscreen s))
     ((equal? (world-state s) 'help_screen_2) (render-helpscreen s))
-    ((equal? (world-state s) 'playing) (BEHOLD-Stage (world-difficulty s) (world-player s) (world-score s)))
+    ((equal? (world-state s) 'playing) (BEHOLD-Stage (world-difficulty s) (world-player s) (world-score s) (world-time s)))
     ((equal? (world-state s) 'lost) (render-splashscreen s))
     (else (render-splashscreen s))))
 
@@ -857,6 +874,7 @@
 ; each clause in big-bang must take the state of the world as an arg, and returns a new state
   (define (main)
   (big-bang (make-water-world)
+            [on-tick advance-time]
     [to-draw render-world]
     [name "Pelagic-Kong"]
     [on-pad change]
