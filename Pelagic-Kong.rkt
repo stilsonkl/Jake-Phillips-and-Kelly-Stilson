@@ -424,10 +424,12 @@
       (flip-horizontal (draw-walley mood))
       (draw-walley mood)))
 
-(define (move_walley p pe)
-  (cond
-    ((eq? pe "right") (make-player (player-state p) (make-posn (+ 10 (posn-x (player-position p))) (posn-y (player-position p))) "right" (player-lives p)))
-    ((eq? pe "left") (make-player (player-state p) (make-posn (- 10 (posn-x (player-position p))) (posn-y (player-position p))) "left" (player-lives p)))))
+(define (move_walley p direction)
+  (let ((posn-offset-x (if (eq? direction "right") 10 -10)))
+       (make-player (player-state p)
+                    (make-posn (+ (posn-x (player-position p)) posn-offset-x) (posn-y (player-position p)))
+                    direction
+                    (player-lives p))))
 
 ;;**********
 ;;  Enemy Struct
@@ -718,16 +720,19 @@
   ;;@Stilsonkl draw sharks using underlay instead of place-image
   ;;add components to list
   (define stage-comp
-    (append (append (append (list rainbow (stage-HUD st)) (place-tiles (stage-board st)))
-                    (for/list ([i (stage-Enemies st)])
-                             (cond
-                               ((< diff 10) sharkfin)
-                               ((< diff 100) laser-shark)
-                               ((< diff 1000) sharkfin)))
-                    (list (scale 1/2 (swim 'happy (player-direction p)))))))
+    (append (list rainbow (stage-HUD st))
+            (place-tiles (stage-board st))
+            (for/list ([i (stage-Enemies st)])
+                      (cond ((< diff 10) sharkfin)
+                            ((< diff 100) laser-shark)
+                            ((< diff 1000) sharkfin)))
+            (list (scale 1/2 (stage-Walley st)))))
   (define stage-posn
-    (append (append (append (list (make-posn 50 75) (make-posn (quotient (posn-x WINDOW) 2) 18)) (tile-posn-list (stage_number diff)) (for/list ([i (stage-Enemies st)])
-                           (shark-p i)) (list START)))))
+    (append (list (make-posn 50 75) (make-posn (quotient (posn-x WINDOW) 2) 18))
+            (tile-posn-list (stage_number diff))
+            (for/list ([i (stage-Enemies st)])
+                      (shark-p i))
+            (list (player-position p))))
   ;;draw stage components
   (place-images stage-comp stage-posn BACKGROUND))
   
@@ -799,13 +804,22 @@
                                                                     ((eq? (world-difficulty s) 100) (make-world 'splash_screen (world-player s) 1 (world-score s)))))
     ;;AT HELP SCREEN
     ((and (pad=? pe "rshift") (equal? (world-state s) 'help_screen)) (make-world 'splash_screen (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "shift") (equal? (world-state s) 'help_screen)) (make-world 'splash_screen (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "rshift") (equal? (world-state s) 'help_screen_2)) (make-world 'splash_screen (world-player s) (world-difficulty s) (world-score s)))
+    ((and (pad=? pe "shift") (equal? (world-state s) 'help_screen_2)) (make-world 'splash_screen (world-player s) (world-difficulty s) (world-score s)))
     ((and (pad=? pe "right") (equal? (world-state s) 'help_screen)) (make-world 'help_screen_2 (world-player s) (world-difficulty s) (world-score s)))
     ((and (pad=? pe "left") (equal? (world-state s) 'help_screen_2)) (make-world 'help_screen (world-player s) (world-difficulty s) (world-score s)))
     ;;AT PLAYING SCREEN
     ((and (pad=? pe "rshift") (equal? (world-state s) 'playing)) (render-splashscreen s))
     ((and (pad=? pe "shift") (equal? (world-state s) 'playing)) (render-splashscreen s))
-    ((and (pad=? pe "right") (equal? (world-state s) 'playing)) (BEHOLD-Stage (world-difficulty s) (move_walley (world-player s) pe) (world-score s)))
-    ((and (pad=? pe "left") (equal? (world-state s) 'playing)) (BEHOLD-Stage (world-difficulty s) (move_walley (world-player s) pe) (world-score s)))
+    ((and (pad=? pe "right") (equal? (world-state s) 'playing)) (make-world 'playing
+                                                                            (move_walley (world-player s) "right")
+                                                                            (world-difficulty s)
+                                                                            (world-score s)))
+    ((and (pad=? pe "left") (equal? (world-state s) 'playing)) (make-world 'playing
+                                                                           (move_walley (world-player s) "left")
+                                                                           (world-difficulty s) 
+                                                                           (world-score s)))
     ;;test for win/stage prog- w for win-test, d for die test
     ((and (pad=? pe "w") (equal? (world-state s) 'playing) (= (world-difficulty s) 900) (make-world 'won (world-player s) (world-difficulty s) (world-score s))))
     ((and (pad=? pe "w") (equal? (world-state s) 'playing)) (make-world 'playing (world-player s) (next-stage (world-difficulty s)) (+ (world-score s) 100)))
