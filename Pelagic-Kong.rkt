@@ -508,11 +508,38 @@
 
 ;;function to highlight difficulty level
 (define (highlight_difficulty d)
-  (cond
-    ((eq? d 1) (make-posn 250 175))
-    ((eq? d 10) (make-posn 250 190))
-    ((eq? d 100) (make-posn 250 205))
-    (else (make-posn 250 175))))
+  (let* ((difficulty (difficulty-from-stage d))
+         (pos-y (cond ((eq? difficulty 1) 175)
+                      ((eq? difficulty 10) 190)
+                      ((eq? difficulty 100) 205))))
+        (make-posn 250 pos-y)))
+
+;***********
+; Paused screen
+;***********
+;Allows for continue or restart
+(define (render-pausedscreen s)
+   (place-images
+     (list
+      (text "Pelagic-Kong" 40 "cyan")
+      (place-image (text "PAUSED" 18 "Yellow")
+                   200 20
+                   (place-image (beside (text "Score:  " 16 "blue")
+                                        (text (number->string (world-score s)) 18 "blue"))
+                                200 40
+                                (place-image (beside (text "Lives remaining: " 16 "blue")
+                                                     (text (number->string (player-lives (world-player s))) 18 "blue"))      
+                                            200 70
+                                            (rectangle 400 100 "outline" CLEAR))))
+      (text "Press c to continue or q to quit." 18 "black")
+      (draw-walley 'swimming (world-time s))
+      )
+     (list (make-posn 250 20) ;title
+           (make-posn 250 110) ;game status box
+           (make-posn 250 200);continue/quit
+           (make-posn (scroll-image (world-time s) 2) 320))
+     
+     BACKGROUND))
 
 ;;function to return stage number from difficulty level
 (define (stage_number d)
@@ -520,12 +547,22 @@
     ((< d 10) d)
     ((< d 100) (/ d 10))
     ((< d 1000) (/ d 100))))
-;;funtion for next stage math
+;;function for next stage math
 (define (next-stage d)
   (cond
     ((< d 10) (+ d 1))
     ((< d 100) (+ d 10))
     ((< d 1000) (+ d 100))))
+;;function to determine stage from difficulty
+(define (difficulty-from-stage d)
+  (cond
+    ((< d 10) 1)   ; [1,9]      => 1   (easy)
+    ((< d 100) 10) ; [10, 99]   => 10  (medium)
+    (else 100)))   ; [100, 999] => 100 (hard)
+;;function to revert to first stage
+(define (stage-reset d) (difficulty-from-stage d))
+
+
 ;***********
 ; HELP Screen
 ;***********
@@ -784,6 +821,7 @@
 
 (define-struct/contract world ([state (or/c 'splash_screen
                                             'playing
+                                            'paused
                                             'won
                                             'lost
                                             'help_screen
@@ -804,48 +842,92 @@
 ;starts game by calling make-world with new state
 ; @Jacob-Phillips - can expand to include other menu options
 ; can change to pad-event instead of key-event
-(define (change s pe)
+(define (make-world-increase-difficulty s)
+        (let* ((current (difficulty-from-stage (world-difficulty s)))
+               (updated (cond ((eq? current 1) 10)
+                              ((eq? current 10) 100)
+                              (else 1))))
+              (make-world (world-state s) (world-time s) (world-player s) updated (world-score s))))
+(define (make-world-decrease-difficulty s)
+        (let* ((current (difficulty-from-stage (world-difficulty s)))
+               (updated (cond ((eq? current 1) 100) ; wrap easy => hard
+                              ((eq? current 10) 1)
+                              (else 10))))
+              (make-world (world-state s) (world-time s) (world-player s) updated (world-score s))))
+
+(define (keyboard-handler s ke)
+  (cond
+   ;;AT PAUSE SCREEN
+   ((equal? (world-state s) 'paused)
+    (cond ((or (key=? ke "c") (key=? ke "C")) (make-world 'playing (world-time s) (world-player s) (world-difficulty s) (world-score s)))
+          ((or (key=? ke "q") (key=? ke "Q")) (make-world 'splash_screen 0 (make-player 'swimming START "left" 3) (stage-reset (world-difficulty s)) 0))
+          (else s)))
+   ;;Other screens use pad only
+   (else s)))
+
+(define (pad-handler s pe)
   (cond
     ;;AT SPLASH SCREEN
-
-    ((and (pad=? pe " ") (equal?  (world-state s) 'splash_screen)) (make-world 'playing 0 (world-player s) (world-difficulty s) (world-score s)))
-    ((and (pad=? pe "rshift") (equal? (world-state s) 'splash_screen)) (make-world 'help_screen 0 (world-player s) (world-difficulty s) (world-score s)))
-    ((and (pad=? pe "shift") (equal? (world-state s) 'splash_screen)) (make-world 'help_screen 0 (world-player s) (world-difficulty s) (world-score s)))
-    ((and (pad=? pe "up") (equal? (world-state s) 'splash_screen))(cond
-                                                                    ((eq? (world-difficulty s) 1) (make-world 'splash_screen (world-time s) (world-player s) 100 (world-score s)))
-                                                                    ((eq? (world-difficulty s) 10) (make-world 'splash_screen (world-time s) (world-player s) 1 (world-score s)))
-                                                                    ((eq? (world-difficulty s) 100) (make-world 'splash_screen (world-time s) (world-player s) 10 (world-score s)))))
-    ((and (pad=? pe "down") (equal? (world-state s) 'splash_screen))(cond
-                                                                    ((eq? (world-difficulty s) 1) (make-world 'splash_screen (world-time s) (world-player s) 10 (world-score s)))
-                                                                    ((eq? (world-difficulty s) 10) (make-world 'splash_screen (world-time s) (world-player s) 100 (world-score s)))
-                                                                    ((eq? (world-difficulty s) 100) (make-world 'splash_screen (world-time s) (world-player s) 1 (world-score s)))))
-    ;;AT HELP SCREEN
-    ((and (pad=? pe "rshift") (equal? (world-state s) 'help_screen)) (make-world 'splash_screen 0 (world-player s) (world-difficulty s) (world-score s)))
-    ((and (pad=? pe "shift") (equal? (world-state s) 'help_screen)) (make-world 'splash_screen 0 (world-player s) (world-difficulty s) (world-score s)))
-    ((and (pad=? pe "rshift") (equal? (world-state s) 'help_screen_2)) (make-world 'splash_screen 0 (world-player s) (world-difficulty s) (world-score s)))
-    ((and (pad=? pe "shift") (equal? (world-state s) 'help_screen_2)) (make-world 'splash_screen 0 (world-player s) (world-difficulty s) (world-score s)))
-    ((and (pad=? pe "right") (equal? (world-state s) 'help_screen)) (make-world 'help_screen_2 0 (world-player s) (world-difficulty s) (world-score s)))
-    ((and (pad=? pe "left") (equal? (world-state s) 'help_screen_2)) (make-world 'help_screen 0 (world-player s) (world-difficulty s) (world-score s)))
+    ((equal? (world-state s) 'splash_screen)
+     (cond ((pad=? pe " ")      (make-world 'playing     0 (world-player s) (world-difficulty s) (world-score s)))
+           ((pad=? pe "rshift") (make-world 'help_screen 0 (world-player s) (world-difficulty s) (world-score s)))
+           ((pad=? pe "shift")  (make-world 'help_screen 0 (world-player s) (world-difficulty s) (world-score s)))
+           ((pad=? pe "up")   (make-world-decrease-difficulty s)) ; invert up/down to match scroll direction
+           ((pad=? pe "down") (make-world-increase-difficulty s)) ; invert up/down to match scroll direction
+           (else s)))
+    ;;AT HELP SCREEN(S)
+    ((equal? (world-state s) 'help_screen)
+     (cond ((pad=? pe "rshift") (make-world 'splash_screen 0 (world-player s) (world-difficulty s) (world-score s)))
+           ((pad=? pe "shift")  (make-world 'splash_screen 0 (world-player s) (world-difficulty s) (world-score s)))
+           ((pad=? pe "right")  (make-world 'help_screen_2 0 (world-player s) (world-difficulty s) (world-score s)))
+           (else s)))
+    ((equal? (world-state s) 'help_screen_2)
+     (cond ((pad=? pe "rshift") (make-world 'splash_screen 0 (world-player s) (world-difficulty s) (world-score s)))
+           ((pad=? pe "shift")  (make-world 'splash_screen 0 (world-player s) (world-difficulty s) (world-score s)))
+           ((pad=? pe "left")   (make-world 'help_screen   0 (world-player s) (world-difficulty s) (world-score s)))
+           (else s)))
     ;;AT PLAYING SCREEN
-    ((and (pad=? pe "rshift") (equal? (world-state s) 'playing)) (render-splashscreen s))
-    ((and (pad=? pe "shift") (equal? (world-state s) 'playing)) (render-splashscreen s))
-    ((and (pad=? pe "right") (equal? (world-state s) 'playing)) (make-world 'playing (world-time s)
-                                                                            (move_walley (world-player s) "right")
-                                                                            (world-difficulty s)
-                                                                            (world-score s)))
-    ((and (pad=? pe "left") (equal? (world-state s) 'playing)) (make-world 'playing (world-time s)
-                                                                           (move_walley (world-player s) "left")
-                                                                           (world-difficulty s) 
-                                                                           (world-score s)))
-    ;;test for win/stage prog- w for win-test, d for die test
-    ((and (pad=? pe "w") (equal? (world-state s) 'playing) (= (world-difficulty s) 900) (make-world 'won 0 (world-player s) (world-difficulty s) (world-score s))))
-    ((and (pad=? pe "w") (equal? (world-state s) 'playing)) (make-world 'playing 0 (world-player s) (next-stage (world-difficulty s)) (+ (world-score s) 100)))
-    ;;put player back at Start, decrease lives
-    ((and (pad=? pe "d") (equal? (world-state s) 'playing) (= (player-lives (world-player s)) 0)) (make-world 'lost 0 (world-player s) (world-difficulty s) (world-score s)))
-    ((and (pad=? pe "d") (equal? (world-state s) 'playing)) (make-world 'playing 0
-                                                                        (make-player (player-state (world-player s)) START "left" (- (player-lives (world-player s)) 1))
-                                                                        (world-difficulty s) (world-score s)))
-    (else s)))
+    ((equal? (world-state s) 'playing)
+     (cond 
+           ((pad=? pe "rshift") (make-world 'paused 0 (world-player s) (world-difficulty s) (world-score s)))
+           ((pad=? pe "shift")  (make-world 'paused 0 (world-player s) (world-difficulty s) (world-score s)))
+           ((pad=? pe "right")  (make-world 'playing (world-time s) (move_walley (world-player s) "right") (world-difficulty s) (world-score s)))
+           ((pad=? pe "left")   (make-world 'playing (world-time s) (move_walley (world-player s) "left")  (world-difficulty s) (world-score s)))
+           ((pad=? pe "d")      (make-world 'playing (world-time s) (move_walley (world-player s) "right") (world-difficulty s) (world-score s)))
+           ((pad=? pe "a")      (make-world 'playing (world-time s) (move_walley (world-player s) "left")  (world-difficulty s) (world-score s)))
+           
+           ;;test for win/stage prog- w for win-test, s for die test
+           ((and (pad=? pe "w") (= (world-difficulty s) 900)
+                           (make-world 'won 0 (world-player s) 1 (world-score s))))
+           ((pad=? pe "w") (make-world 'playing 0 (world-player s) (next-stage (world-difficulty s)) (+ (world-score s) 100)))
+           ;;put player back at Start, decrease lives
+           ((and (pad=? pe "s") (= (player-lives (world-player s)) 0))
+                           (make-world 'lost    0 (world-player s) (world-difficulty s) (world-score s)))
+           ((pad=? pe "s") (make-world 'playing 0
+                                                  (make-player (player-state (world-player s)) START "left" (- (player-lives (world-player s)) 1))
+                                                                   (world-difficulty s) (world-score s)))
+           (else s)))
+    ;;AT PAUSED SCREEN
+    ;TODO
+    ;;AT WON SCREEN
+    ((equal? (world-state s) 'won)
+     (cond ((pad=? pe " ")      (make-world 'playing 0 (make-player 'swimming START "left" 3) (stage-reset (world-difficulty s)) 0))
+           ((pad=? pe "rshift") (make-world 'help_screen 0 (world-player s) (world-difficulty s) (world-score s)))
+           ((pad=? pe "shift")  (make-world 'help_screen 0 (world-player s) (world-difficulty s) (world-score s)))
+           ((pad=? pe "up")     (make-world-decrease-difficulty s)) ; invert up/down to match scroll direction
+           ((pad=? pe "down")   (make-world-increase-difficulty s)) ; invert up/down to match scroll direction
+           (else s)))
+    ;;AT LOST SCREEN
+    ((equal? (world-state s) 'lost)
+     (cond ((pad=? pe " ")      (make-world 'playing 0 (make-player 'swimming START "left" 3) (stage-reset (world-difficulty s)) 0))
+           ((pad=? pe "rshift") (make-world 'help_screen 0 (world-player s) (world-difficulty s) (world-score s)))
+           ((pad=? pe "shift")  (make-world 'help_screen 0 (world-player s) (world-difficulty s) (world-score s)))
+           ((pad=? pe "up")     (make-world-decrease-difficulty s)) ; invert up/down to match scroll direction
+           ((pad=? pe "down")   (make-world-increase-difficulty s)) ; invert up/down to match scroll direction
+           (else s)))
+     
+   (else s) ; unsupported world-state
+   ))
 
  ;;make worlds
 ;;make-initial-world(create the splash_screen)
@@ -862,6 +944,7 @@
     ((equal? (world-state s) 'help_screen) (render-helpscreen s))
     ((equal? (world-state s) 'help_screen_2) (render-helpscreen s))
     ((equal? (world-state s) 'playing) (BEHOLD-Stage (world-difficulty s) (world-player s) (world-score s) (world-time s)))
+    ((equal? (world-state s) 'paused) (render-pausedscreen s))
     ((equal? (world-state s) 'lost) (render-splashscreen s))
     (else (render-splashscreen s))))
 
@@ -877,7 +960,8 @@
             [on-tick advance-time]
     [to-draw render-world]
     [name "Pelagic-Kong"]
-    [on-pad change]
+    [on-key keyboard-handler]
+    [on-pad pad-handler]
     [close-on-stop #t]))
 
 (main)
