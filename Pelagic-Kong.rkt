@@ -425,10 +425,22 @@
       (flip-horizontal (draw-walley mood time))
       (draw-walley mood time)))
 
+(define (posn-offset pos offset)
+  (let ((posn-updated-x (+ (posn-x pos) (posn-x offset)))
+        (posn-updated-y (+ (posn-y pos) (posn-y offset))))
+    (if (< posn-updated-x 0)
+        (make-posn (+ posn-updated-x (posn-x WINDOW)) posn-updated-y)
+        (make-posn (modulo posn-updated-x (posn-x WINDOW)) posn-updated-y))))
+
 (define (move_walley p direction)
-  (let ((posn-offset-x (if (eq? direction "right") 10 -10)))
+  (let ((posn-offset-x (cond ((eq? direction "right") 10)
+                             ((eq? direction "left") -10)
+                             (else 0)))
+        (posn-offset-y (cond ((eq? direction "down") 10)
+                             ((eq? direction "up") -10)
+                             (else 0))))
        (make-player (player-state p)
-                    (make-posn (+ (posn-x (player-position p)) posn-offset-x) (posn-y (player-position p)))
+                    (posn-offset (player-position p) (make-posn posn-offset-x posn-offset-y))
                     direction
                     (player-lives p))))
 
@@ -754,10 +766,14 @@
                                              'dead)]
                                [position (or/c #f posn?)]
                                [direction (or/c "right"
-                                                "left")]
+                                                "left"
+                                                "up"
+                                                "down")]
                                [lives (or/c 0 1 2 3)])
   #:transparent)
 
+(define (player-set-pose p position direction)
+  (make-player (player-state p) position direction (player-lives p)))
 ;***********
 ; STAGES
 ;***********
@@ -875,6 +891,7 @@
            ((pad=? pe "up")   (make-world-decrease-difficulty s)) ; invert up/down to match scroll direction
            ((pad=? pe "down") (make-world-increase-difficulty s)) ; invert up/down to match scroll direction
            (else s)))
+    
     ;;AT HELP SCREEN(S)
     ((equal? (world-state s) 'help_screen)
      (cond ((pad=? pe "rshift") (make-world 'splash_screen 0 (world-player s) (world-difficulty s) (world-score s)))
@@ -886,6 +903,7 @@
            ((pad=? pe "shift")  (make-world 'splash_screen 0 (world-player s) (world-difficulty s) (world-score s)))
            ((pad=? pe "left")   (make-world 'help_screen   0 (world-player s) (world-difficulty s) (world-score s)))
            (else s)))
+    
     ;;AT PLAYING SCREEN
     ((equal? (world-state s) 'playing)
      (cond 
@@ -893,13 +911,15 @@
            ((pad=? pe "shift")  (make-world 'paused 0 (world-player s) (world-difficulty s) (world-score s)))
            ((pad=? pe "right")  (make-world 'playing (world-time s) (move_walley (world-player s) "right") (world-difficulty s) (world-score s)))
            ((pad=? pe "left")   (make-world 'playing (world-time s) (move_walley (world-player s) "left")  (world-difficulty s) (world-score s)))
+           ((pad=? pe "up")     (make-world 'playing (world-time s) (move_walley (world-player s) "up")    (world-difficulty s) (world-score s)))
+           ((pad=? pe "down")   (make-world 'playing (world-time s) (move_walley (world-player s) "down")  (world-difficulty s) (world-score s)))
            ((pad=? pe "d")      (make-world 'playing (world-time s) (move_walley (world-player s) "right") (world-difficulty s) (world-score s)))
            ((pad=? pe "a")      (make-world 'playing (world-time s) (move_walley (world-player s) "left")  (world-difficulty s) (world-score s)))
            
            ;;test for win/stage prog- w for win-test, s for die test
            ((and (pad=? pe "w") (= (world-difficulty s) 900)
                            (make-world 'won 0 (world-player s) 1 (world-score s))))
-           ((pad=? pe "w") (make-world 'playing 0 (world-player s) (next-stage (world-difficulty s)) (+ (world-score s) 100)))
+           ((pad=? pe "w") (make-world 'playing 0 (player-set-pose (world-player s) START "left") (next-stage (world-difficulty s)) (+ (world-score s) 100)))
            ;;put player back at Start, decrease lives
            ((and (pad=? pe "s") (= (player-lives (world-player s)) 0))
                            (make-world 'lost    0 (world-player s) (world-difficulty s) (world-score s)))
@@ -907,8 +927,7 @@
                                                   (make-player (player-state (world-player s)) START "left" (- (player-lives (world-player s)) 1))
                                                                    (world-difficulty s) (world-score s)))
            (else s)))
-    ;;AT PAUSED SCREEN
-    ;TODO
+    
     ;;AT WON SCREEN
     ((equal? (world-state s) 'won)
      (cond ((pad=? pe " ")      (make-world 'playing 0 (make-player 'swimming START "left" 3) (stage-reset (world-difficulty s)) 0))
