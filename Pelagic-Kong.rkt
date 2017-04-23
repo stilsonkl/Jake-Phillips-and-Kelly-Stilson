@@ -3,6 +3,18 @@
 (require 2htdp/universe)
 (require lang/posn)
 
+;************************
+;TO DO LIST:
+; -Move down at spouts?
+; -Make Walley infront or behind waves depending on posiiton
+; -Collisions with sharks
+; -Win when reaching rainbow
+; -Make powerups work
+; -Win/Lose animations
+; -Support WASD for up down side to side
+; -Sounds
+;************************
+
 
 ;************
 ; CONSTANTS
@@ -175,45 +187,6 @@
             20 50
             50 50
             "orange"))
-
-;;*****SHARKNADO*****
-(define light-wind (make-color 0 158 158 200))
-(define dark-wind (make-color 0 133 133 250))
- (define (draw-sharknado image s)
-   (let* ([angle (if (zero? (remainder s 3)) 0 -2)]
-          [color (if (zero? (remainder s 5)) dark-wind light-wind)]
-          [x-offset (if (zero? (remainder s 3)) (- 0 (random 1 10)) (random 1 10))]
-          [y-offset (random 4 6)]
-          [width (* s 7)]
-          [height (* 10 (ceiling (/ width 100)))])
-   (cond ((zero? s) image)
-         ((overlay/align/offset "center" "top"
-                                (rotate angle (ellipse width height "solid" color))
-                                x-offset y-offset
-                                (draw-sharknado image (sub1 s)))))))
-(define sharknado
-  (overlay
-   (rotate 3 sharkfin)
-   (draw-sharknado (ellipse 5 10 "solid" light-wind) 30)
-   BACKGROUND))
-
-(define (create-sharknado x screen)
-  (let* ([speed (* x 5)]
-         [d 6]
-         [path_length (- (posn-y WINDOW) 65)]
-         [start-x 50]
-         [depth (quotient (- (posn-y WINDOW) 100) d)]
-         [shark-images (for/list ([i (in-range 1 d)])
-                         (if (zero? (remainder 3 i)) sharkfin laser-shark))]
-         [shark-pos (for/list ([i (in-range 1 d)])
-                       (make-posn (+ (modulo speed (- path_length (* depth i))) (* i start-x)) (* i depth)))])
-    (if (<= x 35)
-        (place-images shark-images
-                  shark-pos
-                  (overlay (draw-sharknado (ellipse 5 7 "solid" light-wind)
-                                           (quotient (posn-y WINDOW) 7))
-                           screen))
-        screen)))
 
 ;;Super-Powers
 
@@ -471,28 +444,25 @@
         (make-posn (+ posn-updated-x (posn-x WINDOW)) posn-updated-y)
         (make-posn (modulo posn-updated-x (posn-x WINDOW)) posn-updated-y))))
 
-(define (move_walley p direction)
+(define (move_walley s direction)
   (let ((posn-offset-x (cond ((eq? direction "right") 10)
                              ((eq? direction "left") -10)
                              (else 0)))
         (posn-offset-y (cond ((eq? direction "down") 10)
-                             ((eq? direction "up") -10)
+                             ((and (eq? direction "up") (tile-up? (get-tile (build-board (world-difficulty s)) (player-position (world-player s)) s))) -10)
                              (else 0))))
-       (make-player (player-state p)
-                    (posn-offset (player-position p) (make-posn posn-offset-x posn-offset-y))
+       (make-player (player-state (world-player s))
+                    (posn-offset (player-position (world-player s)) (make-posn posn-offset-x posn-offset-y))
                     direction
-                    (player-lives p))))
+                    (player-lives (world-player s)))))
 
 ;;Funtion to scroll image, only changes x value based on time and speed args
 (define (scroll-image t s)
-  (modulo (+ t (posn-x WINDOW)) (posn-x WINDOW)))
-
-
-  ;(cond ((< t 500) (* (- t 20) (ceiling (/ s 2))))
-   ;     ((< t 1000) (* (- t 520) (ceiling (/ s 2))))
-    ;    ((< t 1500) (* (- t 1020) (ceiling (/ s 2))))
-     ;   ((< t 2000) (* (- t 1520) (ceiling (/ s 2))))
-      ;  (else (- t 550))))
+  (cond ((< t 500) (* (- t 20) (ceiling (/ s 2))))
+        ((< t 1000) (* (- t 520) (ceiling (/ s 2))))
+        ((< t 1500) (* (- t 1020) (ceiling (/ s 2))))
+        ((< t 2000) (* (- t 1520) (ceiling (/ s 2))))
+        (else (- t 550))))
                   
 
 ;;**********
@@ -507,17 +477,12 @@
                                [speed (and/c natural-number/c (<=/c 10))]))
 
 ;;draw-enemies funtion takes the difficulty setting of the level to create a list of shark items
-  (define (draw-enemies diff-level stage-num time)
-    (let ([speed (cond ((zero? (remainder stage-num 3)) 4)
-                       ((= (remainder stage-num 3) 1) 3)
-                       (else 2))]
-          [number (cond ((<= stage-num 3) 2)
-                       ((<= stage-num 6) 3)
-                       (else 4))]
-          [switch -1]) 
-    (map (lambda (p) (make-shark 'killing p diff-level speed))
-         (for/list ([i (in-range 0 number)])
-           (make-posn (+ (* 50 i) (scroll-image time speed)) (* (+ i 2) (/ (posn-y START) 5)))))))
+;;f is number of floors in stage
+  (define (draw-enemies d n t)
+    (let ([f 5]) 
+    (map (lambda (p) (make-shark 'killing p d f))
+         (for/list ([i (in-range 0 (- f 2))])
+           (make-posn (+ (* 50 i) (scroll-image t n)) (* (+ i 2) (/ (posn-y START) f)))))))
      
   
 (define (screen_shot s)
@@ -795,6 +760,17 @@
                               [position any/c])
   #:transparent)
 
+(define (get-tile t pos s)
+  (let ((col (/ (posn-x pos) TILE_WIDTH))
+        (row (round (+ (/ (- (posn-y pos)(tiles-start-y t s)) TILE_HEIGHT) 1)))
+        (colPerRow (/ (posn-x WINDOW) TILE_WIDTH)))
+    (list-ref t (inexact->exact (round (+ (* row colPerRow) col))))))
+
+(define (tiles-start-y t s)
+  (let* ((tilesPerRow (/ (posn-x WINDOW) TILE_WIDTH))
+        (rows (/ (length (build-board (world-difficulty s))) tilesPerRow))
+        (gridHeight (* rows TILE_HEIGHT)))
+    (- (posn-y WINDOW) gridHeight)))
 ;;map to determine what image tile to place on the background based on list passed from build-board
 (define (place-tiles t)
   (map (lambda (n) (if(tile-up? n) SPOUT_TILE FLOOR_TILE))
@@ -830,6 +806,7 @@
 (define (BEHOLD-Stage diff p sc t)
   (define st 
   (make-stage 'start diff (draw-enemies diff (stage_number diff) t) (swim (player-state p) (player-direction p) t) (draw-HUD (player-lives p) diff sc) (build-board diff)))
+  ;;@Stilsonkl draw sharks using underlay instead of place-image
   ;;add components to list
   (define stage-comp
     (append (list rainbow (stage-HUD st))
@@ -846,9 +823,7 @@
                       (shark-p i))
             (list (player-position p))))
   ;;draw stage components
-  (if (>= diff 100)
-      (create-sharknado t (place-images stage-comp stage-posn BACKGROUND))
-      (place-images stage-comp stage-posn BACKGROUND)))
+  (place-images stage-comp stage-posn BACKGROUND))
   
 
 ;***********
@@ -899,26 +874,24 @@
   (cond ((eq? (world-state s) 'splash_screen)
          (make-world (world-state s) (if (= 500 (world-time s)) 0 (add1 (world-time s))) (world-player s) (world-difficulty s) (world-score s)))
         (else (make-world (world-state s) (add1 (world-time s)) (world-player s) (world-difficulty s) (world-score s)))))
-;**************
-;Pad input
-;**************
-;change handles keyboard input from user
-;starts game by calling make-world with new state
-; @Jacob-Phillips - can expand to include other menu options
-; can change to pad-event instead of key-event
+
 (define (make-world-increase-difficulty s)
         (let* ((current (difficulty-from-stage (world-difficulty s)))
                (updated (cond ((eq? current 1) 10)
                               ((eq? current 10) 100)
                               (else 1))))
               (make-world (world-state s) (world-time s) (world-player s) updated (world-score s))))
+
 (define (make-world-decrease-difficulty s)
         (let* ((current (difficulty-from-stage (world-difficulty s)))
                (updated (cond ((eq? current 1) 100) ; wrap easy => hard
                               ((eq? current 10) 1)
                               (else 10))))
               (make-world (world-state s) (world-time s) (world-player s) updated (world-score s))))
-
+;**************
+;Key handler
+;**************
+;change handles keyboard input from user
 (define (keyboard-handler s ke)
   (cond
    ;;AT PAUSE SCREEN
@@ -929,6 +902,9 @@
    ;;Other screens use pad only
    (else s)))
 
+;**************
+;Pad handler
+;**************
 (define (pad-handler s pe)
   (cond
     ;;AT SPLASH SCREEN
@@ -957,12 +933,12 @@
      (cond 
            ((pad=? pe "rshift") (make-world 'paused 0 (world-player s) (world-difficulty s) (world-score s)))
            ((pad=? pe "shift")  (make-world 'paused 0 (world-player s) (world-difficulty s) (world-score s)))
-           ((pad=? pe "right")  (make-world 'playing (world-time s) (move_walley (world-player s) "right") (world-difficulty s) (world-score s)))
-           ((pad=? pe "left")   (make-world 'playing (world-time s) (move_walley (world-player s) "left")  (world-difficulty s) (world-score s)))
-           ((pad=? pe "up")     (make-world 'playing (world-time s) (move_walley (world-player s) "up")    (world-difficulty s) (world-score s)))
-           ((pad=? pe "down")   (make-world 'playing (world-time s) (move_walley (world-player s) "down")  (world-difficulty s) (world-score s)))
-           ((pad=? pe "d")      (make-world 'playing (world-time s) (move_walley (world-player s) "right") (world-difficulty s) (world-score s)))
-           ((pad=? pe "a")      (make-world 'playing (world-time s) (move_walley (world-player s) "left")  (world-difficulty s) (world-score s)))
+           ((pad=? pe "right")  (make-world 'playing (world-time s) (move_walley s "right") (world-difficulty s) (world-score s)))
+           ((pad=? pe "left")   (make-world 'playing (world-time s) (move_walley s "left")  (world-difficulty s) (world-score s)))
+           ((pad=? pe "up")     (make-world 'playing (world-time s) (move_walley s "up")    (world-difficulty s) (world-score s)))
+           ((pad=? pe "down")   (make-world 'playing (world-time s) (move_walley s "down")  (world-difficulty s) (world-score s)))
+           ((pad=? pe "d")      (make-world 'playing (world-time s) (move_walley s "right") (world-difficulty s) (world-score s)))
+           ((pad=? pe "a")      (make-world 'playing (world-time s) (move_walley s "left")  (world-difficulty s) (world-score s)))
            
            ;;test for win/stage prog- w for win-test, s for die test
            ((and (pad=? pe "w") (= (world-difficulty s) 900)
@@ -992,7 +968,8 @@
            ((pad=? pe "up")     (make-world-decrease-difficulty s)) ; invert up/down to match scroll direction
            ((pad=? pe "down")   (make-world-increase-difficulty s)) ; invert up/down to match scroll direction
            (else s)))
-     
+    ;;AT PAUSE SCREEN
+    ;Key Handler used
    (else s) ; unsupported world-state
    ))
 
@@ -1022,6 +999,7 @@
 ;;defines main funtion(no args)
 ; calls big-bang with initial state of (make-water-world) which initially creates the splash_screen
 ; each clause in big-bang must take the state of the world as an arg, and returns a new state
+;starts game by calling make-world with new state
   (define (main)
   (big-bang (make-water-world)
             [on-tick advance-time]
