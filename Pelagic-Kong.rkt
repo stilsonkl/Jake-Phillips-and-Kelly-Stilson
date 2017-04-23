@@ -188,6 +188,45 @@
             50 50
             "orange"))
 
+;;*****SHARKNADO*****
+(define light-wind (make-color 0 158 158 200))
+(define dark-wind (make-color 0 133 133 250))
+ (define (draw-sharknado image s)
+   (let* ([angle (if (zero? (remainder s 3)) 0 -2)]
+          [color (if (zero? (remainder s 5)) dark-wind light-wind)]
+          [x-offset (if (zero? (remainder s 3)) (- 0 (random 1 10)) (random 1 10))]
+          [y-offset (random 4 6)]
+          [width (* s 7)]
+          [height (* 10 (ceiling (/ width 100)))])
+   (cond ((zero? s) image)
+         ((overlay/align/offset "center" "top"
+                                (rotate angle (ellipse width height "solid" color))
+                                x-offset y-offset
+                                (draw-sharknado image (sub1 s)))))))
+(define sharknado
+  (overlay
+   (rotate 3 sharkfin)
+   (draw-sharknado (ellipse 5 10 "solid" light-wind) 30)
+   BACKGROUND))
+
+(define (create-sharknado x screen)
+  (let* ([speed (* x 5)]
+         [d 6]
+         [path_length (- (posn-y WINDOW) 65)]
+         [start-x 50]
+         [depth (quotient (- (posn-y WINDOW) 100) d)]
+         [shark-images (for/list ([i (in-range 1 d)])
+                         (if (zero? (remainder 3 i)) sharkfin laser-shark))]
+         [shark-pos (for/list ([i (in-range 1 d)])
+                       (make-posn (+ (modulo speed (- path_length (* depth i))) (* i start-x)) (* i depth)))])
+    (if (<= x 35)
+        (place-images shark-images
+                  shark-pos
+                  (overlay (draw-sharknado (ellipse 5 7 "solid" light-wind)
+                                           (quotient (posn-y WINDOW) 7))
+                           screen))
+        screen)))
+
 ;;Super-Powers
 
 (define ping
@@ -458,12 +497,7 @@
 
 ;;Funtion to scroll image, only changes x value based on time and speed args
 (define (scroll-image t s)
-  (cond ((< t 500) (* (- t 20) (ceiling (/ s 2))))
-        ((< t 1000) (* (- t 520) (ceiling (/ s 2))))
-        ((< t 1500) (* (- t 1020) (ceiling (/ s 2))))
-        ((< t 2000) (* (- t 1520) (ceiling (/ s 2))))
-        (else (- t 550))))
-                  
+  (modulo (+ t (posn-x WINDOW)) (posn-x WINDOW)))
 
 ;;**********
 ;;  Enemy Struct
@@ -477,14 +511,18 @@
                                [speed (and/c natural-number/c (<=/c 10))]))
 
 ;;draw-enemies funtion takes the difficulty setting of the level to create a list of shark items
-;;f is number of floors in stage
-  (define (draw-enemies d n t)
-    (let ([f 5]) 
-    (map (lambda (p) (make-shark 'killing p d f))
-         (for/list ([i (in-range 0 (- f 2))])
-           (make-posn (+ (* 50 i) (scroll-image t n)) (* (+ i 2) (/ (posn-y START) f)))))))
-     
-  
+(define (draw-enemies diff-level stage-num time)
+    (let ([speed (cond ((zero? (remainder stage-num 3)) 4)
+                       ((= (remainder stage-num 3) 1) 3)
+                       (else 2))]
+          [number (cond ((<= stage-num 3) 2)
+                       ((<= stage-num 6) 3)
+                       (else 4))]
+          [switch -1]) 
+    (map (lambda (p) (make-shark 'killing p diff-level speed))
+         (for/list ([i (in-range 0 number)])
+           (make-posn (+ (* 50 i) (scroll-image time speed)) (* (+ i 2) (/ (posn-y START) 5)))))))
+       
 (define (screen_shot s)
   (freeze (BEHOLD-Stage 1 (world-player s) (world-score s))))
 
@@ -823,7 +861,9 @@
                       (shark-p i))
             (list (player-position p))))
   ;;draw stage components
-  (place-images stage-comp stage-posn BACKGROUND))
+  (if (>= diff 100)
+      (create-sharknado t (place-images stage-comp stage-posn BACKGROUND))
+      (place-images stage-comp stage-posn BACKGROUND)))
   
 
 ;***********
