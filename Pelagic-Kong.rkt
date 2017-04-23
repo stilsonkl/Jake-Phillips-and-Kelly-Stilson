@@ -27,7 +27,8 @@
 (define TILE_HEIGHT 75)
 (define TILE_WIDTH 50)
 (define START (make-posn (- (posn-x WINDOW) 50) (- (posn-y WINDOW) (* TILE_HEIGHT 1.5))))
-
+(define STEP_SIZE_Y (/ TILE_HEIGHT 10)) 
+(define STEP_SIZE_X (/ TILE_WIDTH 10))
 (define CLEAR (make-color 100 100 100 0))
 (define BACKGROUND (square (posn-x WINDOW) "solid" "Medium Aquamarine"))
 (define NORMAL (text "NORMAL" 14 "RED"))
@@ -445,17 +446,33 @@
         (make-posn (modulo posn-updated-x (posn-x WINDOW)) posn-updated-y))))
 
 (define (move_walley s direction)
-  (let ((posn-offset-x (cond ((eq? direction "right") 10)
-                             ((eq? direction "left") -10)
+  (let ((posn-offset-x (cond ((eq? direction "right") STEP_SIZE_X)
+                             ((eq? direction "left") (* -1 STEP_SIZE_X)) 
                              (else 0)))
-        (posn-offset-y (cond ((eq? direction "down") 10)
-                             ((and (eq? direction "up") (tile-up? (get-tile (build-board (world-difficulty s)) (player-position (world-player s)) s))) -10)
-                             (else 0))))
+        (posn-offset-y (cond ((eq? direction "down") STEP_SIZE_Y)
+                             ((and (eq? direction "up") (touching-spout-tile? s)) (* -1 STEP_SIZE_Y))
+                            (else 0))))
        (make-player (player-state (world-player s))
                     (posn-offset (player-position (world-player s)) (make-posn posn-offset-x posn-offset-y))
                     direction
                     (player-lives (world-player s)))))
 
+(define (touching-spout-tile? s)
+  (let* ((touchDistance (* .45 TILE_HEIGHT))
+        (tiles (build-board (world-difficulty s)))
+        (playerPos (player-position (world-player s)))
+        (tileOn (get-tile tiles playerPos s)))
+    (if (tile-up? tileOn)
+        #t
+        (let* ((tileAbovePos (make-posn (posn-x playerPos) (- (posn-y playerPos) touchDistance)))
+              (tileAbove (get-tile tiles tileAbovePos s)))
+          (if (not (or (null? tileAbove) (equal? tileAbove tileOn)))
+              (tile-up? tileAbove) ;tileBelow cannot be in touching distance
+              (let* ((tileBelowPos (make-posn (posn-x playerPos) (+ (posn-y playerPos) touchDistance)))
+                    (tileBelow (get-tile tiles tileBelowPos s)))
+                (tile-up? tileBelow)))))))
+              
+        
 ;;Funtion to scroll image, only changes x value based on time and speed args
 (define (scroll-image t s)
   (cond ((< t 500) (* (- t 20) (ceiling (/ s 2))))
@@ -761,16 +778,29 @@
   #:transparent)
 
 (define (get-tile t pos s)
-  (let ((col (/ (posn-x pos) TILE_WIDTH))
-        (row (round (+ (/ (- (posn-y pos)(tiles-start-y t s)) TILE_HEIGHT) 1)))
-        (colPerRow (/ (posn-x WINDOW) TILE_WIDTH)))
-    (list-ref t (inexact->exact (round (+ (* row colPerRow) col))))))
+  ;(let ((col (/ (posn-x pos) TILE_WIDTH))
+   ;     (row (round (/ (- (+ (posn-y pos) TILE_HEIGHT) (tiles-top-y t s)) TILE_HEIGHT)))
+    ;    (colPerRow (/ (posn-x WINDOW) TILE_WIDTH)))
+    ;(list-ref t (inexact->exact (round (+ (* row colPerRow) col))))))
 
-(define (tiles-start-y t s)
+  (let* ((tiles (build-board (world-difficulty s)))
+         (tilesTopY (tiles-top-y tiles s))
+         (posY (posn-y pos))
+         (rowY (round (- posY tilesTopY)))
+         (colPerRow (/ (posn-x WINDOW) TILE_WIDTH))
+         (col (quotient (posn-x pos) TILE_WIDTH))
+         (row (round (/ rowY TILE_HEIGHT)))
+         (tileCount (length tiles))
+         (realIndex (+ (* row colPerRow) col)))
+    (if (and (>= realIndex 0) (< realIndex tileCount))
+        (list-ref tiles (inexact->exact (round realIndex)))
+        '())))
+
+(define (tiles-top-y t s)
   (let* ((tilesPerRow (/ (posn-x WINDOW) TILE_WIDTH))
         (rows (/ (length (build-board (world-difficulty s))) tilesPerRow))
         (gridHeight (* rows TILE_HEIGHT)))
-    (- (posn-y WINDOW) gridHeight)))
+    (- (- (posn-y WINDOW) (/ TILE_HEIGHT 2)) gridHeight)))
 ;;map to determine what image tile to place on the background based on list passed from build-board
 (define (place-tiles t)
   (map (lambda (n) (if(tile-up? n) SPOUT_TILE FLOOR_TILE))
@@ -797,6 +827,19 @@
 
 (define (player-set-pose p position direction)
   (make-player (player-state p) position direction (player-lives p)))
+
+(define (player-climbing-spout s)
+  (let* ((tiles (build-board (world-difficulty s)))
+         (tilesTopY (tiles-top-y tiles s))
+         (colPerRow (/ (posn-x WINDOW) TILE_WIDTH))
+         (rowCount (/ (length tiles) colPerRow))
+         (playerTopY (- (posn-y START) (* TILE_HEIGHT (- rowCount 1))))
+         (posY (posn-y (player-position (world-player s))))
+         (rowY (- posY playerTopY))
+         (remain (remainder (round rowY) TILE_HEIGHT))
+         (epsilon (/ TILE_HEIGHT 20)))
+    (and (> remain epsilon) (< remain (- TILE_HEIGHT epsilon))))) ;User cannot move horizontal unless near top or bottom of spout
+
 ;***********
 ; STAGES
 ;***********
@@ -933,10 +976,10 @@
      (cond 
            ((pad=? pe "rshift") (make-world 'paused 0 (world-player s) (world-difficulty s) (world-score s)))
            ((pad=? pe "shift")  (make-world 'paused 0 (world-player s) (world-difficulty s) (world-score s)))
-           ((pad=? pe "right")  (make-world 'playing (world-time s) (move_walley s "right") (world-difficulty s) (world-score s)))
-           ((pad=? pe "left")   (make-world 'playing (world-time s) (move_walley s "left")  (world-difficulty s) (world-score s)))
+           ((and (pad=? pe "right")(not (player-climbing-spout s)))  (make-world 'playing (world-time s) (move_walley s "right") (world-difficulty s) (world-score s)))
+           ((and (pad=? pe "left") (not (player-climbing-spout s))) (make-world 'playing (world-time s) (move_walley s "left")  (world-difficulty s) (world-score s)))
            ((pad=? pe "up")     (make-world 'playing (world-time s) (move_walley s "up")    (world-difficulty s) (world-score s)))
-           ((pad=? pe "down")   (make-world 'playing (world-time s) (move_walley s "down")  (world-difficulty s) (world-score s)))
+           ;((pad=? pe "down")   (make-world 'playing (world-time s) (move_walley s "down")  (world-difficulty s) (world-score s)))
            ((pad=? pe "d")      (make-world 'playing (world-time s) (move_walley s "right") (world-difficulty s) (world-score s)))
            ((pad=? pe "a")      (make-world 'playing (world-time s) (move_walley s "left")  (world-difficulty s) (world-score s)))
            
