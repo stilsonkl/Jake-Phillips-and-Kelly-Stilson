@@ -7,12 +7,17 @@
 ;TO DO LIST:
 ; -Move down at spouts?
 ; -Make Walley infront or behind waves depending on posiiton
-; ->Jake: this *may* be possible, we would have to change the order that walley and the tile are drawn while he is climbing up.-kellly
+; ->Jake: this *may* be possible, I would have to separate the spout from the tile and draw the waves and spouts at different times.
+;   for now I have just put walley in front of everything-kelly
 ; -Collisions with sharks
-; -Win when reaching rainbow
-; -Make powerups work
+; -> working on it- Kelly
+; -Limit number of lives with super-powers
 ; -Win/Lose animations
+; ->I'm going to try to add these after you reach the rainbow and before advancing to the next stage-kelly
 ; -Support WASD for up down side to side
+; -> sincce I got the win when you reach the rainbow done, we can remove the w and s test for the win/loss. It was just for ease of testing.
+; -Score calc based on time and lives
+; -High Score added to Splash-screen
 ; -Sounds
 ;************************
 
@@ -30,7 +35,6 @@
 (define START (make-posn (- (posn-x WINDOW) 50) (- (posn-y WINDOW) (* TILE_HEIGHT 1.5))))
 (define STEP_SIZE_Y (/ TILE_HEIGHT 10)) 
 (define STEP_SIZE_X (/ TILE_WIDTH 10))
-(define CLEAR (make-color 100 100 100 0))
 (define BACKGROUND (square (posn-x WINDOW) "solid" "Medium Aquamarine"))
 (define NORMAL (text "NORMAL" 14 "RED"))
 (define LASER-SHARKS (text "SHARKS-WITH-LASERBEAMS" 14 "RED"))
@@ -41,9 +45,22 @@
 ;*************
 ;Images Defined
 ;*************
+;;screen shot for use on helpscreen?
+(define (screen_shot s)
+  (freeze (BEHOLD-Stage 1 player (world-score s))))
+
+;;custom colors
+;;(make-color r g b a)
 (define SEAFOAM (make-color 104 220 171 85))
+(define CLEAR (make-color 100 100 100 0))
+(define light-wind (make-color 0 158 158 200))
+(define dark-wind (make-color 0 133 133 250))
 ;;(define SEAFOAM "CadetBlue")
 
+;;Key Image
+;;used on help-screens
+;; takes direction as arg
+;;returns image object
 (define (key d)
   (let ([key (list(make-posn 0 0)
                 (make-posn 2 -2)
@@ -62,6 +79,10 @@
                           (polygon key "solid" "lightgray") (polygon key "outline" "Dimgray"))
                  (scale 1.4 (polygon key "solid" "gray")))))
 
+;;Spout Image
+;;used on spout tiles
+;; takes no args
+;;returns image object
 (define spout
   (let* ([drop (list (make-pulled-point 1/2 -30 15 10 1/2 -30)
                    (make-pulled-point 1/4 60 22 40 1/2 -80)
@@ -131,7 +152,10 @@
                   (make-pulled-point 1/4 0 18 60 1/2 0)
                   (make-pulled-point 1/2 0 12 60 1/2 0))
             "solid" "LightSeaGreen"))))
-
+;;Floor Tile Image
+;;used on background of stages
+;;takes no args
+;;returns image object
 (define FLOOR_TILE
   (let ([waves (list (make-posn 0 17)
                                 (make-pulled-point 1/2 -30 9 10 1/2 30)
@@ -157,7 +181,10 @@
                  FLOOR_TILE))
 
 
-;;Shark
+;;Sharkfin Image
+;;used in stages as enemy
+;;takes no args
+;;returns image object
 (define sharkfin
   (overlay/align "center" "bottom"
                  (rectangle 25 72 "outline" CLEAR)
@@ -179,7 +206,10 @@
                  (make-pulled-point 1/2 0 0 32 1/2 20)) ;;left bottom corner
                   "outline"
                  (make-pen "Dark Slate gray" 1 "solid" "butt" "miter"))))
-;;laser-shark
+;;Laser-Shark Image
+;;used in stages as enemy, builds on sharkfin image
+;;takes no args
+;;returns image object
 (define laser-shark
   (add-line
    (add-line sharkfin
@@ -190,9 +220,14 @@
             50 50
             "orange"))
 
-;;*****SHARKNADO*****
-(define light-wind (make-color 0 158 158 200))
-(define dark-wind (make-color 0 133 133 250))
+;;***********
+;; SHARKNADO
+;;***********
+;sharknado animation/image
+;used in sharknado diff level stages
+; takes image and qty as args
+; recursive call to draw next shape in image
+; returns image object
  (define (draw-sharknado image s)
    (let* ([angle (if (zero? (remainder s 3)) 0 -2)]
           [color (if (zero? (remainder s 5)) dark-wind light-wind)]
@@ -205,12 +240,11 @@
                                 (rotate angle (ellipse width height "solid" color))
                                 x-offset y-offset
                                 (draw-sharknado image (sub1 s)))))))
-(define sharknado
-  (overlay
-   (rotate 3 sharkfin)
-   (draw-sharknado (ellipse 5 10 "solid" light-wind) 30)
-   BACKGROUND))
-
+;;Sharknado function
+;used to animate sharknado
+; takes time and image as args
+; adds sharkfins and draws sharknado image based on time input
+; returns image object
 (define (create-sharknado x screen)
   (let* ([speed (* x 5)]
          [d 6]
@@ -228,12 +262,23 @@
                                            (quotient (posn-y WINDOW) 7))
                            screen))
         screen)))
+;;Sharknado Screen-shot
+;used in helpscreen
+;returns image object
+(define sharknado_still
+  (freeze (create-sharknado 34 (rectangle 200 200 "outline" CLEAR))))
 
-;;Super-Powers
-
+;Ping Image
+;used to accent super-horn and rainbow
+;returns image object
 (define ping
   (pulled-regular-polygon 10 4 3/4 25 "solid" "Ghostwhite"))
 
+;Super-Horn Image
+;used for super-power in stages 5+ to defend walley from sharks
+;placed randomly on stage, as well as adorned on walley's head when found
+;takes no args
+;returns image object
 (define super-horn (scale 1.2 (rotate -30
                            (overlay/align/offset "middle" "middle"
                                           ping
@@ -289,7 +334,10 @@
                     0 6 -45 1/2
                     3 7 45 1/3
                     "DimGray")))))
-;;fish
+;;Fish Image
+;used for super-power to give walley an extra life
+; placed on stage 5+
+;returns image object
 (define fish
   (add-polygon (underlay/offset(underlay/offset (ellipse 60 30 "solid" "seagreen")
                                0 0
@@ -307,7 +355,10 @@
            "solid"
            "LightSalmon"))
 
-;;Rainbow
+;;Rainbow Image
+; used as goal on stage
+; takes no args
+; returns image object
 (define rainbow
   (place-images (list ping (rotate 40 ping) ping)
                 (list (make-posn 25 22) (make-posn 45 48) (make-posn 53 31))
@@ -349,130 +400,122 @@
                 40 65 0 0
                 (make-pen "Medium Aquamarine" 5 "solid" "butt" "round")))))
 
+
 ;****************
-;;Walley Character images and draw-functions
+;;Walley Character
 ;****************
+; images and draw-functions
+;draw-walley function used to move/animate walley based on time and mood state
+; takes time and mood as args
+; returns image object
 (define (draw-walley mood t)
    ;;face
-  (define happy-face
-      (add-line
-       (add-line
-        (add-curve        
-         (polygon (list (make-pulled-point 1/2 45 0 0 1/2 -45) ;;top point
-                        (make-pulled-point 1/2 45 40 40 1/2 -45) ;;right middle
-                        (make-pulled-point 1/2 45 0 80 0 0)  ;;bottom middle
-                        (make-pulled-point 3/4 10 -44 76 5/6 10) ;;left bottom corner
-                        (make-pulled-point 1/4 0 -40 40 1/2 -45)) ;;left middle
-                  "solid"
-                  "SkyBlue")
-         35 50 -30 1/2 60 50 30 1/2 "darkblue")
-        7 65 0 80 "darkblue")
-       15 75 0 80 "darkblue"))
-  (define sad-face
-      (add-line
-       (add-line
-        (add-curve        
-         (polygon (list (make-pulled-point 1/2 45 0 0 1/2 -45) ;;top point
-                        (make-pulled-point 1/2 45 40 40 1/2 -45) ;;right middle
-                        (make-pulled-point 1/2 45 0 80 0 0)  ;;bottom middle
-                        (make-pulled-point 3/4 10 -44 76 5/6 10) ;;left bottom corner
-                        (make-pulled-point 1/4 0 -40 40 1/2 -45)) ;;left middle
-                  "solid"
-                  "SkyBlue")
-         35 50 30 1/2 60 50 -30 1/2 "red")
-        7 65 0 80 "darkblue")
-       15 75 0 80 "darkblue"))
-  (define face
-    (cond
-    ((eq? mood 'happy) happy-face)
-    ((eq? mood 'swimming) happy-face)
-    (else sad-face)))  
-  (define eye-r (overlay/offset (circle 5 "solid" "white")
+  (let* ([happy-face (add-line
+                      (add-line
+                       (add-curve        
+                        (polygon (list (make-pulled-point 1/2 45 0 0 1/2 -45) ;;top point
+                                       (make-pulled-point 1/2 45 40 40 1/2 -45) ;;right middle
+                                       (make-pulled-point 1/2 45 0 80 0 0)  ;;bottom middle
+                                       (make-pulled-point 3/4 10 -44 76 5/6 10) ;;left bottom corner
+                                       (make-pulled-point 1/4 0 -40 40 1/2 -45)) ;;left middle
+                                 "solid"
+                                 "SkyBlue")
+                        35 50 -30 1/2 60 50 30 1/2 "darkblue")
+                       7 65 0 80 "darkblue")
+                      15 75 0 80 "darkblue")]
+         [sad-face (add-line
+                    (add-line
+                     (add-curve        
+                      (polygon (list (make-pulled-point 1/2 45 0 0 1/2 -45) ;;top point
+                                     (make-pulled-point 1/2 45 40 40 1/2 -45) ;;right middle
+                                     (make-pulled-point 1/2 45 0 80 0 0)  ;;bottom middle
+                                     (make-pulled-point 3/4 10 -44 76 5/6 10) ;;left bottom corner
+                                     (make-pulled-point 1/4 0 -40 40 1/2 -45)) ;;left middle
+                               "solid"
+                               "SkyBlue")
+                      35 50 30 1/2 60 50 -30 1/2 "red")
+                     7 65 0 80 "darkblue")
+                    15 75 0 80 "darkblue")]
+         [face (cond
+                 ((eq? mood 'happy) happy-face)
+                 ((eq? mood 'swimming) happy-face)
+                 ((eq? mood 'super) happy-face)
+                 (else sad-face))]
+         [eye-r (overlay/offset (circle 5 "solid" "white")
                   -3 1
-                  (circle 9 "solid" "RoyalBlue")))
-  (define eye-l (overlay/offset (circle 5 "solid" "white")
+                  (circle 9 "solid" "RoyalBlue"))]
+         [eye-l (overlay/offset (circle 5 "solid" "white")
                   -3 1
-                  (circle 9 "solid" "RoyalBlue")))
-  (define ping
-  (pulled-regular-polygon 10 4 3/4 25 "solid" "Ghostwhite"))
-
-
-
-
-(define horn (rotate -30(scene+curve
-                     (scene+curve
-                      (scene+curve
-                       (scene+curve
-                        (scene+curve
-                         (scene+curve
-                          (polygon (list (make-posn 0 0) ;;tip point
-                           (make-pulled-point 1/3 0 22 45 1/2 -45) ;;right point
-                           (make-pulled-point 1/3 45 0 45 1/2 0)) ;;left tail point
-                     "solid"
-                     "burlywood")
-                          0 36 -45 1/2
-                          18 37 45 1/3
-                          "DarkGoldenrod")
-                         0 28 -45 1/2
-                         14 29 45 1/3
-                         "DarkGoldenrod")
-                        0 21 -45 1/2
-                        11 22 45 1/3
-                        "DarkGoldenrod")
-                       0 15 -45 1/2
-                       8 16 45 1/3
-                       "DarkGoldenrod")
-                      0 10 -45 1/2
-                       5 11 45 1/3
-                       "DarkGoldenrod")
-                     0 5 -45 1/2
-                     3 6 45 1/3
-                     "DarkGoldenrod")))
-
-  ;;create closed polygon using list of posn's(x y), points in clockwise order
-  (define tail
-   (rotate (cond ((odd? t) 30)
-                  (else 60))                                           
-            (polygon (list (make-pulled-point 1/2 10 30 10 1/2 -10) ;;middle tail point
-                           (make-pulled-point 1/2 45 60 10 3/4 45) ;;right tail point
-                           (make-pulled-point 1/2 -10 40 70 1/2 -20) ;;body tail point
-                           (make-pulled-point 1/2 -20 0 10 1/2 -45)) ;;left tail point
-                     "solid"
-                     "CornflowerBlue")))
-  (define body
-    (polygon (list (make-pulled-point 1/2 45 0 0 1/2 -45) ;;top point
-                   (make-pulled-point 1/2 45 40 40 1/2 -45) ;;right middle
-                   (make-pulled-point 1/2 45 -20 100 0 0)  ;;bottom middle
-                   (make-pulled-point 3/4 10 -70 85 5/6 5) ;;left bottom corner
-                   (make-pulled-point 1/2 -20 -40 40 1/2 -45)) ;;left middle
-             "solid"
-             "CornflowerBlue"))
-
-  (define face-posn
-    (make-posn 112 85))
-  (define eye-r-posn
-    (make-posn 100 70))
-  (define eye-l-posn
-    (make-posn 145 68))
-  (define horn-posn
-    (make-posn 120 35))
-  (define body-posn
-    (make-posn 98 95))
-  (define tail-posn
-    (make-posn 35 110))
-
-  ;;underlays images in order of list
-  (place-images
-   (list eye-r eye-l horn face tail body)
-   (list eye-r-posn eye-l-posn horn-posn face-posn tail-posn body-posn)
-   (rectangle 170 150 "outline" CLEAR)))
+                  (circle 9 "solid" "RoyalBlue"))]
+         [ping (pulled-regular-polygon 10 4 3/4 25 "solid" "Ghostwhite")]
+         [horn (rotate -30(scene+curve
+                           (scene+curve
+                            (scene+curve
+                             (scene+curve
+                              (scene+curve
+                               (scene+curve
+                                (polygon (list (make-posn 0 0) ;;tip point
+                                               (make-pulled-point 1/3 0 22 45 1/2 -45) ;;right point
+                                               (make-pulled-point 1/3 45 0 45 1/2 0)) ;;left tail point
+                                         "solid"
+                                         "burlywood")
+                                0 36 -45 1/2
+                                18 37 45 1/3
+                                "DarkGoldenrod")
+                               0 28 -45 1/2
+                               14 29 45 1/3
+                               "DarkGoldenrod")
+                              0 21 -45 1/2
+                              11 22 45 1/3
+                              "DarkGoldenrod")
+                             0 15 -45 1/2
+                             8 16 45 1/3
+                             "DarkGoldenrod")
+                            0 10 -45 1/2
+                            5 11 45 1/3
+                            "DarkGoldenrod")
+                           0 5 -45 1/2
+                           3 6 45 1/3
+                           "DarkGoldenrod"))]
+         ;;create closed polygon using list of posn's(x y), points in clockwise order
+         [tail(rotate (cond ((odd? t) 30)
+                            (else 60))
+                      (polygon (list (make-pulled-point 1/2 10 30 10 1/2 -10) ;;middle tail point
+                                     (make-pulled-point 1/2 45 60 10 3/4 45) ;;right tail point
+                                     (make-pulled-point 1/2 -10 40 70 1/2 -20) ;;body tail point
+                                     (make-pulled-point 1/2 -20 0 10 1/2 -45)) ;;left tail point
+                               "solid"
+                               "CornflowerBlue"))]
+         [body (polygon (list (make-pulled-point 1/2 45 0 0 1/2 -45) ;;top point
+                              (make-pulled-point 1/2 45 40 40 1/2 -45) ;;right middle
+                              (make-pulled-point 1/2 45 -20 100 0 0)  ;;bottom middle
+                              (make-pulled-point 3/4 10 -70 85 5/6 5) ;;left bottom corner
+                              (make-pulled-point 1/2 -20 -40 40 1/2 -45)) ;;left middle
+                        "solid"
+                        "CornflowerBlue")]
+         [face-posn (make-posn 112 85)]
+         [eye-r-posn (make-posn 100 70)]
+         [eye-l-posn (make-posn 145 68)]
+         [horn-posn (make-posn 120 35)]
+         [body-posn (make-posn 98 95)]
+         [tail-posn (make-posn 35 110)])
+         ;;underlays images in order of list
+         (place-images (list eye-r eye-l (if(eq? mood 'super) super-horn horn) face tail body)
+                       (list eye-r-posn eye-l-posn horn-posn face-posn tail-posn body-posn)
+                       (rectangle 170 150 "outline" CLEAR))))
 
 ;;constants for walley
 (define happy-walley
  (draw-walley 'swimming 0))
 (define sad-walley
  (draw-walley 'dead 0))
+(define super-walley
+  (draw-walley 'super 0))
 
+;;Swim method
+;;draws walley in a specific direction
+; takes mood, direction(string) and time args
+; return image object
 (define (swim mood direction time)
   (if (eq? direction "left")
       (flip-horizontal (draw-walley mood time))
@@ -514,13 +557,70 @@
               
         
 ;;Funtion to scroll image, only changes x value based on time and speed args
-(define (scroll-image t s)
+;;used to scroll walley image aross splash-screen
+; takes time arg
+; returns new position as int type
+(define (scroll-image t)
   (modulo (+ t (posn-x WINDOW)) (posn-x WINDOW)))
 
-;;**********
-;;  Enemy Struct
-;;**********
 
+;**************
+; Player Struct
+;**************
+;;defines and contracts the player object
+;;needs to be expanded to include player characteristics
+;;this definition type automatically creates:
+;  constructor= (make-player state position direction lives)
+;  eq test= player?
+;  fields= player-state, player-position, player-lives
+(define-struct/contract player ([state (or/c 'swimming
+                                             'dead
+                                             'super)]
+                               [position (or/c #f posn?)]
+                               [direction (or/c "right"
+                                                "left"
+                                                "up"
+                                                "down")]
+                               [lives (or/c 0 1 2 3 4 5 6 7 8 9)])
+  #:transparent)
+
+;;function to make player in certain direction?
+;posible duplicate of (swim mood direction)?
+(define (player-set-pose p position direction)
+  (make-player (player-state p) position direction (player-lives p)))
+
+(define (player-climbing-spout s)
+  (let* ((tiles (build-board (world-difficulty s)))
+         (tilesTopY (tiles-top-y tiles s))
+         (colPerRow (/ (posn-x WINDOW) TILE_WIDTH))
+         (rowCount (/ (length tiles) colPerRow))
+         (playerTopY (- (posn-y START) (* TILE_HEIGHT (- rowCount 1))))
+         (posY (posn-y (player-position (world-player s))))
+         (rowY (- posY playerTopY))
+         (remain (remainder (round rowY) TILE_HEIGHT))
+         (epsilon (/ TILE_HEIGHT 20)))
+    (and (> remain epsilon) (< remain (- TILE_HEIGHT epsilon))))) ;User cannot move horizontal unless near top or bottom of spout
+
+;;detects if the "bounding box" of walley crosses into the
+; "bounding box" of another object
+; return true/false
+(define (object_collision? player object-pos)
+  (let* ([walley_left (posn-x player)]
+         [walley_right (+ walley_left 100)]
+         [walley_top (posn-y player)]
+         [walley_bottom (+ walley_top 75)]
+         [object_left (posn-x object-pos)]
+         [object_right (+ object_left 40)]
+         [object_top (posn-y object-pos)]
+         [object_bottom (+ object_top 30)])
+    (and (or (>= walley_right object_right walley_left)
+         (<= walley_right object_left walley_left))
+         (or (>= walley_top object_top walley_bottom)
+         (<= walley_top object_bottom walley_bottom)))))
+
+;;**************
+;;  Enemy Struct
+;;**************
 ;;define/contract struct for enemy shark.
 ;;
 (define-struct/contract shark ([state (or/c 'killing 'dead)]
@@ -539,17 +639,399 @@
           [switch -1]) 
     (map (lambda (p) (make-shark 'killing p diff-level speed))
          (for/list ([i (in-range 0 number)])
-           (make-posn (+ (* 50 i) (scroll-image time speed)) (* (+ i 2) (/ (posn-y START) 5)))))))
-       
-(define (screen_shot s)
-  (freeze (BEHOLD-Stage 1 (world-player s) (world-score s))))
+           (make-posn (+ (* 50 i) (scroll-image time)) (* (+ i 2) (/ (posn-y START) 5)))))))
 
-;***********
+;;********************
+; Super-Powers Struct
+;*********************
+(define-struct/contract super-powers ([state  (or/c #t #f)]
+                                      [armor-pos (or/c #f posn?)]
+                                      [fish-pos (or/c #f posn?)]))
+
+;;function to make-world where everything is the same, but the fish is gone
+;;add 1 live to player lives
+;;returns a world
+(define (found-fish s)
+  (let* ([game-state (world-state s)]
+         [stage_n (stage_number (world-difficulty s))]
+         [difficulty_level (world-difficulty s)]
+         [time (world-time s)]
+         [player (world-player s)]
+         [score (world-score s)]
+         [stage (world-stage s)]
+         [super-powers (stage-super-powers stage)])
+    (make-world game-state time
+                (make-player (player-state player) (player-position player) (player-direction player) (add1 (player-lives player)))
+                difficulty_level score
+                (make-stage game-state difficulty_level (stage-Enemies stage) (stage-Walley stage) (stage-HUD stage) (stage-board stage)
+                            (make-super-powers #t (super-powers-armor-pos super-powers) #f)))))
+
+;;function to make-world where everything is the same, but the super-horn is gone
+;;changes walley to wearing the super-horn
+;; changes state of game to 'super?
+;;returns a world
+(define (found-armor s)
+  (let* ([game-state (world-state s)]
+         [stage_n (stage_number (world-difficulty s))]
+         [difficulty_level (world-difficulty s)]
+         [time (world-time s)]
+         [player (world-player s)]
+         [score (world-score s)]
+         [stage (world-stage s)]
+         [super-powers (stage-super-powers stage)])
+    (make-world game-state time
+                (make-player 'super (player-position player) (player-direction player) (player-lives player))
+                difficulty_level score
+                (make-stage game-state difficulty_level (stage-Enemies stage) super-walley (stage-HUD stage) (stage-board stage)
+                            (make-super-powers #t #f (super-powers-fish-pos super-powers))))))
+
+
+;************
+; Tile Struct
+;************
+;;defines struct for tiles
+(define-struct/contract tile ([up? boolean?]
+                              [position any/c])
+  #:transparent)
+
+(define (get-tile t pos s)
+  ;(let ((col (/ (posn-x pos) TILE_WIDTH))
+   ;     (row (round (/ (- (+ (posn-y pos) TILE_HEIGHT) (tiles-top-y t s)) TILE_HEIGHT)))
+    ;    (colPerRow (/ (posn-x WINDOW) TILE_WIDTH)))
+    ;(list-ref t (inexact->exact (round (+ (* row colPerRow) col))))))
+
+  (let* ((tiles (build-board (world-difficulty s)))
+         (tilesTopY (tiles-top-y tiles s))
+         (posY (posn-y pos))
+         (rowY (round (- posY tilesTopY)))
+         (colPerRow (/ (posn-x WINDOW) TILE_WIDTH))
+         (col (quotient (posn-x pos) TILE_WIDTH))
+         (row (round (/ rowY TILE_HEIGHT)))
+         (tileCount (length tiles))
+         (realIndex (+ (* row colPerRow) col)))
+    (if (and (>= realIndex 0) (< realIndex tileCount))
+        (list-ref tiles (inexact->exact (round realIndex)))
+        '())))
+
+(define (tiles-top-y t s)
+  (let* ((tilesPerRow (/ (posn-x WINDOW) TILE_WIDTH))
+        (rows (/ (length (build-board (world-difficulty s))) tilesPerRow))
+        (gridHeight (* rows TILE_HEIGHT)))
+    (- (- (posn-y WINDOW) (/ TILE_HEIGHT 2)) gridHeight)))
+
+;;function to place tiles on the background of the stage
+; takes list of #t #f values to determine if a spout_tile or Floor_tile
+; returns the image
+(define (place-tiles t)
+  (map (lambda (n) (if(tile-up? n) SPOUT_TILE FLOOR_TILE))
+       t))
+
+;*************
+; Build Boards
+;*************
+; functions to build board of tiles for background of game-play
+;spout list
+;takes stage_n NOT difficulty as arg
+;returns list of integers
+(define (spout-list d)
+  (let ([l (stage_number d)])
+(cond ((eq? l 1) (list 14 19 21 25 32 40 46))
+      ((eq? l 2) (list 17 21 28 35 41 46))
+      ((eq? l 3) (list 19 25 30 39 45))
+      ((eq? l 4) (list 15 24 26 33 37 42 48))
+      ((eq? l 5) (list 13 17 25 33 37 44 45 46))
+      ((eq? l 6) (list 12 18 23 36 45))
+      ((eq? l 7) (list 16 21 29 35 47))
+      ((eq? l 8) (list 13 25 37 49))
+      ((eq? l 9) (list 14 18 21 29 33 46))
+      (else (list 14 18 24 29)))))
+
+;;recursive function that takes an x(width) and y value to fill with positions for tiles.
+;;makes a posn and appends to a list, calls func again
+(define (make-wide x y l)
+  (if (eq? 0 x) l
+      (make-wide (- x TILE_WIDTH) y (append (list (make-posn (- x (quotient TILE_WIDTH 2)) (+ y (quotient TILE_HEIGHT 2)))) l))))
+(define (build-posn-list x y l)
+  (if (< y TILE_HEIGHT) l
+      (build-posn-list x (- y TILE_HEIGHT) (make-wide x (- y TILE_HEIGHT) l))))
+
+;tile-posn-list function
+;builds list based on difficulty and window size
+;return list of positions of tiles
+(define (tile-posn-list d)
+  (build-posn-list (posn-x WINDOW) (- (posn-y WINDOW) TILE_HEIGHT) '()))
+
+
+;;builds a list of tiles based on stage list
+;makes list of t/f the size of x*y
+;makes list of positions based on x*y and window size
+;uses map to create list of tile objects
+(define (build-board diff-level)
+  (let* ([x (/ (posn-x WINDOW) TILE_WIDTH)]
+         [y (quotient (- (posn-y WINDOW) TILE_HEIGHT) TILE_HEIGHT)])
+    (map (lambda (b p) (make-tile b p))
+         (for/list ([i (in-range 0 (* x y))])
+           (if (member i (spout-list diff-level)) #t #f))
+         (tile-posn-list diff-level))))
+
+;************
+; HUD
+;************
+;;displays important player info: lives left, score, stage number,
+;@Jacob-Phillips : possible a time counter?
+;;
+(define HUD-AREA (rectangle (posn-x WINDOW) 50 "solid" CLEAR))
+;;(define HEART (circle 5 "solid" "pink"))
+(define HEART (freeze (scale 1/6 happy-walley)))
+;;returns scene with info loaded on HUD-AREA
+(define (draw-HUD lives diff sc)
+  ;;create list of component and positions
+  (define hud-comp
+   (append (for/list ([i (in-range 0 lives)])
+                HEART)
+           (list (text "STAGE:" 22 "black")
+                (text (number->string (stage_number diff)) 22 "black")
+               (cond
+                     ((< diff 10) NORMAL)
+                     ((< diff 100) LASER-SHARKS)
+                    ((< diff 1000) SHARKNADO))                      
+                   (text "SCORE:" 14 "Black")
+                   (text (number->string sc) 14 "black"))))
+  (define hud-posn
+    (append (for/list ([i (in-range 1 (+ lives 1))])
+               (make-posn (* i 30) 20))
+            (list (make-posn 200 20) ;stage text
+                  (make-posn 250 20) ;stage num
+                  (make-posn 250 40) ; diff setting
+                  (make-posn 375 20) ;score text
+                  (make-posn 425 20)))) ;player score
+  (place-images  hud-comp hud-posn HUD-AREA))
+
+;*************
+; Stage Struct
+;*************
+;;defines and contracts the player object
+;;needs to be expanded to include player characteristics
+;;this definition type automatically creates:
+;  constructor= (make-stage state dif list-of-enemies Walley HUD Board superpowers)
+;  eq test= stage?
+;  fields= stage-state, stage-difficulty, stage-Enemies, stage-Walley, stage-HUD, stage-board, stage-super-powers
+(define-struct/contract stage ([state (or/c 'start
+                                            'playing
+                                            'dead
+                                            'won
+                                            'lost)]
+                               [difficulty (and/c natural-number/c (<=/c 1000))]
+                               [Enemies (or/c #f (listof shark?))]
+                               [Walley any/c]
+                               [HUD any/c]
+                               [board (or/c #f (listof tile?))]
+                               [super-powers (or/c #f super-powers?)]) ;;added)
+  #:transparent)
+
+;;BEHOLD-Stage function
+; called on-draw of big-bang
+; takes world as arg and splits into usable info to build stage/render images for game-play
+; two states of 'start and 'playing
+; modifies stage fields as neccesary to facilite game functions
+; **returns IMAGE object** NOT world state
+(define (BEHOLD-Stage s)
+  (cond ((eq? 'start (world-state s))  ;;creates original stage
+         (let* ([stage_n (stage_number (world-difficulty s))]
+                [difficulty_level (world-difficulty s)]
+                [time (world-time s)]
+                [player (world-player s)]
+                [score (world-score s)]
+                [sp (stage-super-powers (world-stage s))]
+                [st (make-stage 'playing difficulty_level (draw-enemies difficulty_level stage_n time)
+                                (swim (player-state player) (player-direction player) time)
+                                (draw-HUD (player-lives player) difficulty_level score)
+                                (build-board difficulty_level) sp)]
+                [stage-comp (append (list (scale (if(eq? (player-state player) 'super)
+                                                    5/9
+                                                    1/2)
+                                                 (swim (player-state player) (player-direction player) time))
+                                          rainbow
+                                          (stage-HUD st))
+                                    (if(super-powers-state sp) (list (scale 2/3 super-horn) (scale 2/3 fish)) '())
+                                    (place-tiles (stage-board st))
+                                    (for/list ([i (stage-Enemies st)])
+                                      (cond ((< difficulty_level 10) sharkfin)
+                                            ((< difficulty_level 100) laser-shark)
+                                            ((< difficulty_level 1000) sharkfin))))]
+                [stage-posn (append (list (player-position player) (make-posn 50 75) (make-posn (quotient (posn-x WINDOW) 2) 18))
+                                    (if(super-powers-state sp) (list (super-powers-armor-pos sp) (super-powers-fish-pos sp)) '())
+                                    (tile-posn-list stage_n)
+                                    (for/list ([i (stage-Enemies st)])
+                                      (shark-p i)))])
+           ;;draw stage components and test for sharknado animation
+           (cond ((>= difficulty_level 100) (create-sharknado time (place-images (filter (lambda (e) (not (empty? e))) stage-comp) (filter (lambda (e) (not (eq? #f e))) stage-posn) BACKGROUND))) ;Sharknado activation
+                 (else (place-images (filter (lambda (e) (not (empty? e))) stage-comp) (filter (lambda (e) (not (eq? #f e))) stage-posn) BACKGROUND)))))
+         ((eq? 'playing (world-state s)) ;;re-draws stage after movement
+          (let* ([stage_n (stage_number (world-difficulty s))]
+                [difficulty_level (world-difficulty s)]
+                [time (world-time s)]
+                [player (world-player s)]
+                [score (world-score s)]
+                [sp (stage-super-powers (world-stage s))]
+                [st (make-stage 'playing difficulty_level (stage-Enemies (world-stage s))
+                                (swim (player-state player) (player-direction player) time)
+                                (draw-HUD (player-lives player) difficulty_level score)
+                                (build-board difficulty_level) sp)]
+                [stage-comp 
+                 (append (list (scale (if(eq? (player-state player) 'super)
+                                                    5/9
+                                                    1/2)
+                                                 (swim (player-state player) (player-direction player) time))
+                               rainbow
+                               (stage-HUD st))
+                         (if(super-powers-state sp) (list (if(posn? (super-powers-armor-pos sp)) (scale 2/3 super-horn) '()) (if(posn? (super-powers-fish-pos sp)) (scale 2/3 fish) '())) '())
+                         (place-tiles (stage-board st))
+                         (for/list ([i (stage-Enemies st)])
+                           (cond ((< difficulty_level 10) sharkfin)
+                                 ((< difficulty_level 100) laser-shark)
+                                 ((< difficulty_level 1000) sharkfin))))]
+                [stage-posn
+                 (append (list (player-position player) (make-posn 50 75) (make-posn (quotient (posn-x WINDOW) 2) 18))
+                         (if(super-powers-state sp) (list (super-powers-armor-pos sp) (super-powers-fish-pos sp)) '())
+                         (tile-posn-list stage_n)
+                         (for/list ([i (stage-Enemies st)])
+                           (shark-p i)))]) ;end let*
+         ;;draw stage components
+           (cond ((>= difficulty_level 100) (create-sharknado time (place-images (filter (lambda (e) (not (empty? e))) stage-comp) (filter (lambda (e) (not (eq? #f e))) stage-posn) BACKGROUND))) ;;sharknado animation
+                 (else (place-images (filter (lambda (e) (not (empty? e))) stage-comp) (filter (lambda (e) (not (eq? #f e))) stage-posn) BACKGROUND)))))))
+
+;;function to advance stage
+; takes world as args
+; changes stage and difficulty, resets all enemies, super-powers and time
+;;returns world
+(define (advance-stage s)
+  (let* ([stage_n (add1 (stage_number (world-difficulty s)))]
+         [difficulty_level (world-difficulty s)]
+         [time 0]
+         [player (make-player 'swimming START "left" (player-lives (world-player s)))]
+         [score (world-score s)]
+         [sp (make-super-powers (if (>= stage_n 5) #t #f)
+                                       (if (>= stage_n 5) (make-posn (+ 50 (* 40 stage_n)) (- 380 (* 20 stage_n))) #f)
+                                       (if (>= stage_n 5) (make-posn (- 490 (* 20 stage_n)) (+ 75 (* 30 stage_n))) #f))]
+         [stage (make-stage 'start difficulty_level (draw-enemies difficulty_level stage_n time)
+                         (swim (player-state player) (player-direction player) time)
+                         (draw-HUD (player-lives player) difficulty_level score)
+                         (build-board difficulty_level) sp)])
+  (make-world 'start 0 player (next-stage difficulty_level) (+ score 100) stage)))
+
+;;function to return stage number from difficulty level
+(define (stage_number d)
+  (cond
+    ((< d 10) d)
+    ((< d 100) (/ d 10))
+    ((< d 1000) (/ d 100))))
+;;function for next stage math
+(define (next-stage d)
+  (cond
+    ((< d 10) (+ d 1))
+    ((< d 100) (+ d 10))
+    ((< d 1000) (+ d 100))))
+;;function to determine stage from difficulty
+(define (difficulty-from-stage d)
+  (cond
+    ((< d 10) 1)   ; [1,9]      => 1   (easy)
+    ((< d 100) 10) ; [10, 99]   => 10  (medium)
+    (else 100)))   ; [100, 999] => 100 (hard)
+;;function to revert to first stage
+(define (stage-reset d) (difficulty-from-stage d))
+
+;************
+;WORLD-STRUCT
+;************
+;;defines and contracts the world object
+;;needs to be expanded to include: stage-board(board object), player(player object), player-posn(posn)
+;;this definition type automatically creates:
+;  constructor= (make-world state time player difficulty score stage)
+;  eq test= world?
+;  fields= world-state, world-player
+
+(define-struct/contract world ([state (or/c 'splash_screen
+                                            'start
+                                            'playing
+                                            'paused
+                                            'won
+                                            'lost
+                                            'help_screen
+                                            'help_screen_2)]
+                               [time (and/c natural-number/c (<=/c 100000))]
+                               [player (or/c #f player?)]
+                               [difficulty (and/c natural-number/c (<=/c 1000))]
+                               [score (and/c natural-number/c (>=/c 0))]
+                               [stage (or/c #f stage?)])
+  #:transparent)
+
+;;advance time function
+; called on-tick of big-bang
+;used to count time, animate objects
+;takes world as arg
+; increases time count
+; returns world object
+(define (advance-time s)
+  (cond ((eq? (world-state s) 'splash_screen)
+         (make-world (world-state s) (if (= 500 (world-time s)) 0 (add1 (world-time s))) (world-player s) (world-difficulty s) (world-score s) (world-stage s)))
+        (else (make-world (world-state s) (add1 (world-time s)) (world-player s) (world-difficulty s) (world-score s) (world-stage s)))))
+
+(define (make-world-increase-difficulty s)
+        (let* ((current (difficulty-from-stage (world-difficulty s)))
+               (updated (cond ((eq? current 1) 10)
+                              ((eq? current 10) 100)
+                              (else 1))))
+              (make-world (world-state s) (world-time s) (world-player s) updated (world-score s) (world-stage s))))
+
+(define (make-world-decrease-difficulty s)
+        (let* ((current (difficulty-from-stage (world-difficulty s)))
+               (updated (cond ((eq? current 1) 100) ; wrap easy => hard
+                              ((eq? current 10) 1)
+                              (else 10))))
+              (make-world (world-state s) (world-time s) (world-player s) updated (world-score s) (world-stage s))))
+
+;;make worlds
+;;make-initial-world(create the splash_screen)
+;; creates defualt world-state for initial state of big-bang
+; sets all values to 1 or defaults
+(define (make-water-world)
+  (make-world 'splash_screen
+              0
+              (make-player 'swimming START "left" 3)
+              1
+              0
+              (make-stage 'start
+                          1
+                          (draw-enemies 1 1 1)
+                          happy-walley
+                          (draw-HUD 3 1 0)
+                          (build-board 1)
+                          (make-super-powers #f #f #f))))
+
+;;render-world
+;;draws the world based on the state of the world
+;;must take a world-state as an arg because it is called in 'big-bang'
+;;must return a scene or image object
+(define (render-world s)
+  (cond
+    ((equal? (world-state s) 'splash_screen) (render-splashscreen s))
+    ((equal? (world-state s) 'help_screen) (render-helpscreen s))
+    ((equal? (world-state s) 'help_screen_2) (render-helpscreen s))
+    ((equal? (world-state s) 'playing) (BEHOLD-Stage s))
+    ((equal? (world-state s) 'start) (BEHOLD-Stage s))
+    ((equal? (world-state s) 'paused) (render-pausedscreen s))
+    ((equal? (world-state s) 'lost) (render-splashscreen s))
+    (else (render-splashscreen s))))
+
+
+;*************
 ; MENU display
-;***********
+;*************
 ;BEHOLD-Menu- contains list of menu components, list of menu posns
 ;places components at posns in order to display info to user
-;; need to change placeholder text for actual info from player $ world objects
+;; takes world as arg and splits the info from it
+;;returns image object
 (define (render-splashscreen s)
    (place-images
      (list
@@ -582,7 +1064,7 @@
            (make-posn 250 205);sharknado
            (highlight_difficulty (world-difficulty s))
            (make-posn 250 235);help text
-           (make-posn (scroll-image (world-time s) 2) 320))
+           (make-posn (scroll-image (world-time s)) 320))
      
      BACKGROUND))
 
@@ -593,54 +1075,6 @@
                       ((eq? difficulty 10) 190)
                       ((eq? difficulty 100) 205))))
         (make-posn 250 pos-y)))
-
-;***********
-; Paused screen
-;***********
-;Allows for continue or restart
-(define (render-pausedscreen s)
-   (place-images
-     (list
-      (text "Pelagic-Kong" 40 "cyan")
-      (place-image (text "PAUSED" 18 "Yellow")
-                   200 20
-                   (place-image (beside (text "Score:  " 16 "blue")
-                                        (text (number->string (world-score s)) 18 "blue"))
-                                200 40
-                                (place-image (beside (text "Lives remaining: " 16 "blue")
-                                                     (text (number->string (player-lives (world-player s))) 18 "blue"))      
-                                            200 70
-                                            (rectangle 400 100 "outline" CLEAR))))
-      (text "Press c to continue or q to quit." 18 "black")
-      (draw-walley 'swimming (world-time s))
-      )
-     (list (make-posn 250 20) ;title
-           (make-posn 250 110) ;game status box
-           (make-posn 250 200);continue/quit
-           (make-posn (scroll-image (world-time s) 2) 320))
-     
-     BACKGROUND))
-
-;;function to return stage number from difficulty level
-(define (stage_number d)
-  (cond
-    ((< d 10) d)
-    ((< d 100) (/ d 10))
-    ((< d 1000) (/ d 100))))
-;;function for next stage math
-(define (next-stage d)
-  (cond
-    ((< d 10) (+ d 1))
-    ((< d 100) (+ d 10))
-    ((< d 1000) (+ d 100))))
-;;function to determine stage from difficulty
-(define (difficulty-from-stage d)
-  (cond
-    ((< d 10) 1)   ; [1,9]      => 1   (easy)
-    ((< d 100) 10) ; [10, 99]   => 10  (medium)
-    (else 100)))   ; [100, 999] => 100 (hard)
-;;function to revert to first stage
-(define (stage-reset d) (difficulty-from-stage d))
 
 
 ;***********
@@ -711,7 +1145,7 @@
                              (text " Can kill you from farther away" 16 "RED")
                              (beside
                              (text "SHARK-NADO: " 16 "black")
-                            (scale 1 (overlay/align "middle" "bottom" (crop 0 25 50 50 FLOOR_TILE) (crop 0 25 50 50 sharkfin))))
+                            (scale 1/3 sharknado_still))
                              (text " Randomly drops random sharks from the sky, randomly" 16 "RED")
                             (beside
                              (text "Armored Horn " 16 "yellow")
@@ -733,335 +1167,34 @@
                250 220
                BACKGROUND))))
 
-
-;**********
-; Build Boards
-;**********
-(define (spout-list d)
-  (let ([l (stage_number d)])
-(cond ((eq? l 1) (list 14 19 21 25 32 40 46))
-      ((eq? l 2) (list 17 21 28 35 41 46))
-      ((eq? l 3) (list 19 25 30 39 45))
-      ((eq? l 4) (list 15 24 26 33 37 42 48))
-      ((eq? l 5) (list 13 17 25 33 37 44 45 46))
-      ((eq? l 6) (list 12 18 23 36 45))
-      ((eq? l 7) (list 16 21 29 35 47))
-      ((eq? l 8) (list 13 25 37 49))
-      ((eq? l 9) (list 14 18 21 29 33 46))
-      (else (list 14 18 24 29)))))
-
-;;recursive function that takes an x(width) and y value to fill with positions for tiles.
-;;makes a posn and appends to a list, calls func again
-(define (make-wide x y l)
-  (if (eq? 0 x) l
-      (make-wide (- x TILE_WIDTH) y (append (list (make-posn (- x (quotient TILE_WIDTH 2)) (+ y (quotient TILE_HEIGHT 2)))) l))))
-(define (build-posn-list x y l)
-  (if (< y TILE_HEIGHT) l
-      (build-posn-list x (- y TILE_HEIGHT) (make-wide x (- y TILE_HEIGHT) l))))
-
-(define (tile-posn-list d)
-  (build-posn-list (posn-x WINDOW) (- (posn-y WINDOW) TILE_HEIGHT) '()))
+;**************
+; Paused screen
+;**************
+;Allows for continue or restart
+(define (render-pausedscreen s)
+   (place-images
+     (list
+      (text "Pelagic-Kong" 40 "cyan")
+      (place-image (text "PAUSED" 18 "Yellow")
+                   200 20
+                   (place-image (beside (text "Score:  " 16 "blue")
+                                        (text (number->string (world-score s)) 18 "blue"))
+                                200 40
+                                (place-image (beside (text "Lives remaining: " 16 "blue")
+                                                     (text (number->string (player-lives player)) 18 "blue"))      
+                                            200 70
+                                            (rectangle 400 100 "outline" CLEAR))))
+      (text "Press c to continue or q to quit." 18 "black")
+      (draw-walley 'swimming (world-time s))
+      )
+     (list (make-posn 250 20) ;title
+           (make-posn 250 110) ;game status box
+           (make-posn 250 200);continue/quit
+           (make-posn (scroll-image (world-time s) 2) 320))
+     
+     BACKGROUND))
 
 
-;;builds a list of tiles based on pre-defined stage list
-;makes list of t/f the size of x*y
-;makes list of positions based on x*y and window size
-;uses map to create list of tiles using list of t/f and posns
-(define (build-board diff-level)
-  (let* ([x (/ (posn-x WINDOW) TILE_WIDTH)]
-         [y (quotient (- (posn-y WINDOW) TILE_HEIGHT) TILE_HEIGHT)])
-    (map (lambda (b p) (make-tile b p))
-         (for/list ([i (in-range 0 (* x y))])
-           (if (member i (spout-list diff-level)) #t #f))
-         (tile-posn-list diff-level))))
-
-;************
-; HUD
-;************
-;;displays important player info: lives left, score, stage number,
-;@Jacob-Phillips : possible a time counter?
-;;
-(define HUD-AREA (rectangle (posn-x WINDOW) 50 "solid" CLEAR))
-;;(define HEART (circle 5 "solid" "pink"))
-(define HEART (freeze (scale 1/5 happy-walley)))
-;;returns scene with info loaded on HUD-AREA
-(define (draw-HUD lives diff sc)
-  ;;create list of component and positions
-  (define hud-comp
-   (append (for/list ([i (in-range 0 lives)])
-                HEART)
-           (list (text "STAGE:" 22 "black")
-                (text (number->string (stage_number diff)) 22 "black")
-               (cond
-                     ((< diff 10) NORMAL)
-                     ((< diff 100) LASER-SHARKS)
-                    ((< diff 1000) SHARKNADO))                      
-                   (text "SCORE:" 14 "Black")
-                   (text (number->string sc) 14 "black"))))
-  (define hud-posn
-    (append (for/list ([i (in-range 1 (+ lives 1))])
-               (make-posn (* i 30) 20))
-            (list (make-posn 175 20)
-                  (make-posn 250 20)
-                  (make-posn 250 40)
-                  (make-posn 375 20)
-                  (make-posn 425 20))))
-  (place-images  hud-comp hud-posn HUD-AREA))
-
-;;************
-; Super Powers 
-;*************
-(define-struct/contract super-powers ([state  (or/c #t #f)]
-                                      [armor-pos (or/c #f posn?)]
-                                      [fish-pos (or/c #f posn?)]))
-
-(define (found-fish stage-comp stage-posn world)
-(begin
-  (place-images (append (list (car stage-comp) (cadr stage-comp) (caddr stage-comp)) (cddddr stage-comp))
-                (append (list (car stage-posn) (cadr stage-posn) (caddr stage-posn)) (cddddr stage-posn))
-                BACKGROUND)))
-                                   ;(BEHOLD-Stage (make-world (world-state s)
-                                    ;                         time
-                                     ;                        (make-player (player-state player)
-                                      ;                                    (player-position player)
-                                       ;                                   (player-direction player)
-                                        ;                                  (player-lives player))
-                                         ;                    difficulty_level
-                                          ;                   (add1 score)))))
-
-;************
-; Tile Struct
-;************
-;;defines struct for tiles
-(define-struct/contract tile ([up? boolean?]
-                              [position any/c])
-  #:transparent)
-
-(define (get-tile t pos s)
-  ;(let ((col (/ (posn-x pos) TILE_WIDTH))
-   ;     (row (round (/ (- (+ (posn-y pos) TILE_HEIGHT) (tiles-top-y t s)) TILE_HEIGHT)))
-    ;    (colPerRow (/ (posn-x WINDOW) TILE_WIDTH)))
-    ;(list-ref t (inexact->exact (round (+ (* row colPerRow) col))))))
-
-  (let* ((tiles (build-board (world-difficulty s)))
-         (tilesTopY (tiles-top-y tiles s))
-         (posY (posn-y pos))
-         (rowY (round (- posY tilesTopY)))
-         (colPerRow (/ (posn-x WINDOW) TILE_WIDTH))
-         (col (quotient (posn-x pos) TILE_WIDTH))
-         (row (round (/ rowY TILE_HEIGHT)))
-         (tileCount (length tiles))
-         (realIndex (+ (* row colPerRow) col)))
-    (if (and (>= realIndex 0) (< realIndex tileCount))
-        (list-ref tiles (inexact->exact (round realIndex)))
-        '())))
-
-(define (tiles-top-y t s)
-  (let* ((tilesPerRow (/ (posn-x WINDOW) TILE_WIDTH))
-        (rows (/ (length (build-board (world-difficulty s))) tilesPerRow))
-        (gridHeight (* rows TILE_HEIGHT)))
-    (- (- (posn-y WINDOW) (/ TILE_HEIGHT 2)) gridHeight)))
-
-;;function to place tiles on the background of the stage
-; takes list of #t #f values to determine if a spout_tile or Floor_tile
-; returns the image
-(define (place-tiles t)
-  (map (lambda (n) (if(tile-up? n) SPOUT_TILE FLOOR_TILE))
-       t))  
-
-;***********
-; Player Struct
-;***********
-;;defines and contracts the player object
-;;needs to be expanded to include player characteristics
-;;this definition type automatically creates:
-;  constructor= (make-player state position lives)
-;  eq test= player?
-;  fields= player-state, player-position, player-lives
-(define-struct/contract player ([state (or/c 'swimming
-                                             'dead
-                                             'strong)]
-                               [position (or/c #f posn?)]
-                               [direction (or/c "right"
-                                                "left"
-                                                "up"
-                                                "down")]
-                               [lives (or/c 0 1 2 3 4 5)])
-  #:transparent)
-
-(define (player-set-pose p position direction)
-  (make-player (player-state p) position direction (player-lives p)))
-
-(define (player-climbing-spout s)
-  (let* ((tiles (build-board (world-difficulty s)))
-         (tilesTopY (tiles-top-y tiles s))
-         (colPerRow (/ (posn-x WINDOW) TILE_WIDTH))
-         (rowCount (/ (length tiles) colPerRow))
-         (playerTopY (- (posn-y START) (* TILE_HEIGHT (- rowCount 1))))
-         (posY (posn-y (player-position (world-player s))))
-         (rowY (- posY playerTopY))
-         (remain (remainder (round rowY) TILE_HEIGHT))
-         (epsilon (/ TILE_HEIGHT 20)))
-    (and (> remain epsilon) (< remain (- TILE_HEIGHT epsilon))))) ;User cannot move horizontal unless near top or bottom of spout
-
-;;detects if the "bounding box" of walley crosses into the
-; "bounding box" of another object
-; return true/false
-(define (object_collision? player object-pos)
-  (let* ([walley_left (posn-x player)]
-         [walley_right (+ walley_left 100)]
-         [walley_top (posn-y player)]
-         [walley_bottom (+ walley_top 100)]
-         [object_left (posn-x object-pos)]
-         [object_right (+ object_left 40)]
-         [object_top (posn-y object-pos)]
-         [object_bottom (+ object_top 30)])
-    (and (or (>= walley_right object_right walley_left)
-         (<= walley_right object_left walley_left))
-         (or (>= walley_top object_top walley_bottom)
-         (<= walley_top object_bottom walley_bottom)))))
-
-
-;***********
-; STAGES
-;***********
-;;BEHOLD-Stage function that takes info from the player and world in order to build the stage
-;  for game-play
-;;
-(define (BEHOLD-Stage s)
-  (cond ((eq? 'start (world-state s))  ;;creates original stage
-         ;;add components to list
-         (let* ([stage_n (stage_number (world-difficulty s))]
-                [difficulty_level (world-difficulty s)]
-                [time (world-time s)]
-                [player (world-player s)]
-                [score (world-score s)]
-                [sp (make-super-powers #t (make-posn 250 250) (make-posn 100 100))]
-                                       ;(make-posn (+ 50 (* 40 stage_n)) (- 380 (* 20 stage_n)))
-                                       ;(make-posn (- 490 (* 20 stage_n)) (+ 75 (* 30 stage_n)))
-                [st (make-stage 'start difficulty_level (draw-enemies difficulty_level stage_n time)
-                                (swim (player-state player) (player-direction player) time)
-                                (draw-HUD (player-lives player) difficulty_level score)
-                                (build-board difficulty_level) sp)]
-                [stage-comp (append (list rainbow (stage-HUD st))
-                                    (if(>= stage_n 5) (list (scale 2/3 super-horn) (scale 2/3 fish)) '())
-                                    (place-tiles (stage-board st))
-                                    (for/list ([i (stage-Enemies st)])
-                                      (cond ((< difficulty_level 10) sharkfin)
-                                            ((< difficulty_level 100) laser-shark)
-                                            ((< difficulty_level 1000) sharkfin)))
-                                    (list (scale 1/2 (swim (player-state player) (player-direction player) time))))]
-                [stage-posn (append (list (make-posn 50 75) (make-posn (quotient (posn-x WINDOW) 2) 18))
-                                    (if(>= stage_n 5) (list (super-powers-armor-pos sp) (super-powers-fish-pos sp))'())
-                                    (tile-posn-list stage_n)
-                                    (for/list ([i (stage-Enemies st)])
-                                      (shark-p i))
-                                    (list (player-position player)))])
-           ;;draw stage components and test for sharknado animation
-           (cond ((>= difficulty_level 100) (create-sharknado time (place-images stage-comp stage-posn BACKGROUND))) ;Sharknado activation
-                 (else (place-images stage-comp stage-posn BACKGROUND)))))
-         ((eq? 'playing (world-state s)) ;;re-draws stage after movement, added collision testing functions
-          ;;add components to list
-          (let* ([stage_n (stage_number (world-difficulty s))]
-                [difficulty_level (world-difficulty s)]
-                [time (world-time s)]
-                [player (world-player s)]
-                [score (world-score s)]
-                [st (make-stage 'playing difficulty_level (stage-Enemies (world-stage s))
-                                (swim (player-state player) (player-direction player) time)
-                                (draw-HUD (player-lives player) difficulty_level score)
-                                (build-board difficulty_level) (stage-super-powers (world-stage s)))]
-                [sp (stage-super-powers st)]
-                [stage-comp 
-                 (append (list rainbow (stage-HUD st))
-                         (if(>= stage_n 5) (list (if(super-powers-armor-pos sp) (scale 2/3 super-horn) '()) (if(super-powers-fish-pos sp) (scale 2/3 fish) '())) '())
-                         (place-tiles (stage-board st))
-                         (for/list ([i (stage-Enemies st)])
-                           (cond ((< difficulty_level 10) sharkfin)
-                                 ((< difficulty_level 100) laser-shark)
-                                 ((< difficulty_level 1000) sharkfin)))
-                         (list (scale 1/2 (swim (player-state player) (player-direction player) time))))]
-                [stage-posn
-                 (append (list (make-posn 50 75) (make-posn (quotient (posn-x WINDOW) 2) 18))
-                         (if(>= stage_n 5) (list (if(super-powers-armor-pos sp) (super-powers-armor-pos sp) '()) (if(super-powers-armor-pos sp) (super-powers-fish-pos sp) '())) '())
-                         (tile-posn-list stage_n)
-                         (for/list ([i (stage-Enemies st)])
-                           (shark-p i))
-                         (list (player-position player)))]) ;end let*
-         ;;draw stage components
-           ;;test for collisions and alters to stage
-        (cond ((object_collision? (player-position player) (super-powers-fish-pos sp)) (found-fish stage-comp stage-posn s))
-              ((>= difficulty_level 100) (create-sharknado time (place-images stage-comp stage-posn BACKGROUND)))
-               (else (place-images stage-comp stage-posn BACKGROUND)))))))
-
-  
-
-;***********
-; Stage Struct
-;***********
-;;defines and contracts the player object
-;;needs to be expanded to include player characteristics
-;;this definition type automatically creates:
-;  constructor= (make-stage state dif list of enemies Walley HUD Board superpowers)
-;  eq test= stage?
-;  fields= stage-state, stage-difficulty, stage-Enemies, stage-Walley, stage-HUD, stage-board, stage-super-powers
-(define-struct/contract stage ([state (or/c 'start
-                                            'playing
-                                            'dead
-                                            'won
-                                            'lost)]
-                               [difficulty (and/c natural-number/c (<=/c 1000))]
-                               [Enemies (or/c #f (listof shark?))]
-                               [Walley any/c]
-                               [HUD any/c]
-                               [board (or/c #f (listof tile?))]
-                               [super-powers (or/c #f super-powers?)]) ;;added)
-  #:transparent)
-
-
-
-;************
-;WORLD-STRUCT
-;************
-;;defines and contracts the world object
-;;needs to be expanded to include: stage-board(board object), player(player object), player-posn(posn)
-;;this definition type automatically creates:
-;  constructor= (make-world state player)
-;  eq test= world?
-;  fields= world-state, world-player
-
-(define-struct/contract world ([state (or/c 'splash_screen
-                                            'start
-                                            'playing
-                                            'paused
-                                            'won
-                                            'lost
-                                            'help_screen
-                                            'help_screen_2)]
-                               [time (and/c natural-number/c (<=/c 100000))]
-                               [player (or/c #f player?)]
-                               [difficulty (and/c natural-number/c (<=/c 1000))]
-                               [score (and/c natural-number/c (>=/c 0))]
-                               [stage (or/c #f stage?)])
-  #:transparent)
-(define (advance-time s)
-  (cond ((eq? (world-state s) 'splash_screen)
-         (make-world (world-state s) (if (= 500 (world-time s)) 0 (add1 (world-time s))) (world-player s) (world-difficulty s) (world-score s) (world-stage s)))
-        (else (make-world (world-state s) (add1 (world-time s)) (world-player s) (world-difficulty s) (world-score s) (world-stage s)))))
-
-(define (make-world-increase-difficulty s)
-        (let* ((current (difficulty-from-stage (world-difficulty s)))
-               (updated (cond ((eq? current 1) 10)
-                              ((eq? current 10) 100)
-                              (else 1))))
-              (make-world (world-state s) (world-time s) (world-player s) updated (world-score s) (world-stage s))))
-
-(define (make-world-decrease-difficulty s)
-        (let* ((current (difficulty-from-stage (world-difficulty s)))
-               (updated (cond ((eq? current 1) 100) ; wrap easy => hard
-                              ((eq? current 10) 1)
-                              (else 10))))
-              (make-world (world-state s) (world-time s) (world-player s) updated (world-score s) (world-stage s))))
 ;**************
 ;Key handler
 ;**************
@@ -1080,104 +1213,81 @@
 ;Pad handler
 ;**************
 (define (pad-handler s pe)
+  (let* ([game-state (world-state s)]
+         [stage_n (stage_number (world-difficulty s))]
+         [difficulty_level (world-difficulty s)]
+         [time (world-time s)]
+         [player (world-player s)]
+         [score (world-score s)]
+         [stage (world-stage s)]
+         [super-powers (stage-super-powers stage)])
   (cond
     ;;AT SPLASH SCREEN
-    ((equal? (world-state s) 'splash_screen)
-     (cond ((pad=? pe " ")      (make-world 'start     0 (world-player s) (world-difficulty s) (world-score s) (world-stage s)))
-           ((pad=? pe "rshift") (make-world 'help_screen 0 (world-player s) (world-difficulty s) (world-score s) (world-stage s)))
-           ((pad=? pe "shift")  (make-world 'help_screen 0 (world-player s) (world-difficulty s) (world-score s) (world-stage s)))
+    ((equal? game-state 'splash_screen)
+     (cond ((pad=? pe " ")      (make-world 'start     0 player difficulty_level score stage))
+           ((pad=? pe "rshift") (make-world 'help_screen 0 player difficulty_level score stage))
+           ((pad=? pe "shift")  (make-world 'help_screen 0 player difficulty_level score stage))
            ((pad=? pe "up")   (make-world-decrease-difficulty s)) ; invert up/down to match scroll direction
            ((pad=? pe "down") (make-world-increase-difficulty s)) ; invert up/down to match scroll direction
            (else s)))
     
     ;;AT HELP SCREEN(S)
-    ((equal? (world-state s) 'help_screen)
-     (cond ((pad=? pe "rshift") (make-world 'splash_screen 0 (world-player s) (world-difficulty s) (world-score s) (world-stage s)))
-           ((pad=? pe "shift")  (make-world 'splash_screen 0 (world-player s) (world-difficulty s) (world-score s) (world-stage s)))
-           ((pad=? pe "right")  (make-world 'help_screen_2 0 (world-player s) (world-difficulty s) (world-score s) (world-stage s)))
+    ((equal? game-state 'help_screen)
+     (cond ((pad=? pe "rshift") (make-world 'splash_screen 0 player difficulty_level score stage))
+           ((pad=? pe "shift")  (make-world 'splash_screen 0 player difficulty_level score stage))
+           ((pad=? pe "right")  (make-world 'help_screen_2 0 player difficulty_level score stage))
            (else s)))
-    ((equal? (world-state s) 'help_screen_2)
-     (cond ((pad=? pe "rshift") (make-world 'splash_screen 0 (world-player s) (world-difficulty s) (world-score s) (world-stage s)))
-           ((pad=? pe "shift")  (make-world 'splash_screen 0 (world-player s) (world-difficulty s) (world-score s) (world-stage s)))
-           ((pad=? pe "left")   (make-world 'help_screen   0 (world-player s) (world-difficulty s) (world-score s) (world-stage s)))
+    ((equal? game-state 'help_screen_2)
+     (cond ((pad=? pe "rshift") (make-world 'splash_screen 0 player difficulty_level score stage))
+           ((pad=? pe "shift")  (make-world 'splash_screen 0 player difficulty_level score stage))
+           ((pad=? pe "left")   (make-world 'help_screen   0 player difficulty_level score stage))
            (else s)))
     
     ;;AT PLAYING SCREEN
-    ((or (equal? (world-state s) 'playing) (equal? (world-state s) 'start))
-     (cond 
-           ((pad=? pe "rshift") (make-world 'paused 0 (world-player s) (world-difficulty s) (world-score s) (world-stage s)))
-           ((pad=? pe "shift")  (make-world 'paused 0 (world-player s) (world-difficulty s) (world-score s) (world-stage s)))
-           ((and (pad=? pe "right")(not (player-climbing-spout s)))  (make-world 'playing (world-time s) (move_walley s "right") (world-difficulty s) (world-score s) (world-stage s)))
-           ((and (pad=? pe "left") (not (player-climbing-spout s))) (make-world 'playing (world-time s) (move_walley s "left")  (world-difficulty s) (world-score s) (world-stage s)))
-           ((pad=? pe "up")     (make-world 'playing (world-time s) (move_walley s "up")    (world-difficulty s) (world-score s) (world-stage s)))
-           ;((pad=? pe "down")   (make-world 'playing (world-time s) (move_walley s "down")  (world-difficulty s) (world-score s) (world-stage s)))
-           ((pad=? pe "d")      (make-world 'playing (world-time s) (move_walley s "right") (world-difficulty s) (world-score s) (world-stage s)))
-           ((pad=? pe "a")      (make-world 'playing (world-time s) (move_walley s "left")  (world-difficulty s) (world-score s) (world-stage s)))
+    ((or (equal? game-state 'playing) (equal? game-state 'start))
+     (cond ((object_collision? (player-position player) (make-posn 40 75)) (advance-stage s))
+           ((and (super-powers-fish-pos super-powers) (object_collision? (player-position player) (super-powers-fish-pos super-powers))) (found-fish s))
+           ((and (super-powers-armor-pos super-powers) (object_collision? (player-position player) (super-powers-armor-pos super-powers))) (found-armor s))
+           ((pad=? pe "rshift") (make-world 'paused 0 player difficulty_level score stage))
+           ((pad=? pe "shift")  (make-world 'paused 0 player difficulty_level score stage))
+           ((and (pad=? pe "right")(not (player-climbing-spout s)))  (make-world 'playing time (move_walley s "right") difficulty_level score stage))
+           ((and (pad=? pe "left") (not (player-climbing-spout s))) (make-world 'playing time (move_walley s "left")  difficulty_level score stage))
+           ((pad=? pe "up")     (make-world 'playing time (move_walley s "up")    difficulty_level score stage))
+           ;((pad=? pe "down")   (make-world 'playing time (move_walley s "down")  difficulty_level score stage))
+           ((pad=? pe "d")      (make-world 'playing time (move_walley s "right") difficulty_level score stage))
+           ((pad=? pe "a")      (make-world 'playing time (move_walley s "left")  difficulty_level score stage))
            
            ;;test for win/stage prog- w for win-test, s for die test
-           ((and (pad=? pe "w") (= (world-difficulty s) 900)
-                           (make-world 'won 0 (world-player s) 1 (world-score s) (world-stage s))))
-           ((pad=? pe "w") (make-world 'playing 0 (player-set-pose (world-player s) START "left") (next-stage (world-difficulty s)) (+ (world-score s) 100) (world-stage s)))
+           ((and (pad=? pe "w") (= difficulty_level 900)
+                           (make-world 'won 0 player 1 score stage)))
+           ((pad=? pe "w") (advance-stage s))
            ;;put player back at Start, decrease lives
-           ((and (pad=? pe "s") (= (player-lives (world-player s)) 0))
-                           (make-world 'lost    0 (world-player s) (world-difficulty s) (world-score s) (world-stage s)))
-           ((pad=? pe "s") (make-world 'playing 0
-                                                  (make-player (player-state (world-player s)) START "left" (- (player-lives (world-player s)) 1))
-                                                                   (world-difficulty s) (world-score s) (world-stage s)))
+           ((and (pad=? pe "s") (= (player-lives player) 0))
+                           (make-world 'lost  0 player difficulty_level score stage))
+           ((pad=? pe "s") (make-world 'start 0 (make-player (player-state player) START "left" (- (player-lives player) 1))
+                                       difficulty_level score stage))
            (else s)))
     
     ;;AT WON SCREEN
-    ((equal? (world-state s) 'won)
-     (cond ((pad=? pe " ")      (make-world 'playing 0 (make-player 'swimming START "left" 3) (stage-reset (world-difficulty s)) 0 (world-stage s)))
-           ((pad=? pe "rshift") (make-world 'help_screen 0 (world-player s) (world-difficulty s) (world-score s) (world-stage s)))
-           ((pad=? pe "shift")  (make-world 'help_screen 0 (world-player s) (world-difficulty s) (world-score s) (world-stage s)))
+    ((equal? game-state 'won)
+     (cond ((pad=? pe " ")      (make-world 'playing 0 (make-player 'swimming START "left" 3) (stage-reset difficulty_level) 0 stage))
+           ((pad=? pe "rshift") (make-world 'help_screen 0 player difficulty_level score stage))
+           ((pad=? pe "shift")  (make-world 'help_screen 0 player difficulty_level score stage))
            ((pad=? pe "up")     (make-world-decrease-difficulty s)) ; invert up/down to match scroll direction
            ((pad=? pe "down")   (make-world-increase-difficulty s)) ; invert up/down to match scroll direction
            (else s)))
     ;;AT LOST SCREEN
-    ((equal? (world-state s) 'lost)
-     (cond ((pad=? pe " ")      (make-world 'playing 0 (make-player 'swimming START "left" 3) (stage-reset (world-difficulty s)) 0 (world-stage s)))
-           ((pad=? pe "rshift") (make-world 'help_screen 0 (world-player s) (world-difficulty s) (world-score s) (world-stage s)))
-           ((pad=? pe "shift")  (make-world 'help_screen 0 (world-player s) (world-difficulty s) (world-score s) (world-stage s)))
+    ((equal? game-state 'lost)
+     (cond ((pad=? pe " ")      (make-world 'playing 0 (make-player 'swimming START "left" 3) (stage-reset difficulty_level) 0 stage))
+           ((pad=? pe "rshift") (make-world 'help_screen 0 player difficulty_level score stage))
+           ((pad=? pe "shift")  (make-world 'help_screen 0 player difficulty_level score stage))
            ((pad=? pe "up")     (make-world-decrease-difficulty s)) ; invert up/down to match scroll direction
            ((pad=? pe "down")   (make-world-increase-difficulty s)) ; invert up/down to match scroll direction
            (else s)))
     ;;AT PAUSE SCREEN
     ;Key Handler used
    (else s) ; unsupported world-state
-   ))
-
- ;;make worlds
-;;make-initial-world(create the splash_screen)
-(define (make-water-world)
-  (make-world 'splash_screen
-              0
-              (make-player 'swimming START "left" 3)
-              1
-              0
-              (make-stage 'start
-                          1
-                          (draw-enemies 1 1 1)
-                          happy-walley
-                          (draw-HUD 3 1 0)
-                          (build-board 1)
-                          (make-super-powers #t (make-posn 75 325) (make-posn 350 150)))))
-
-;;render-world
-;;draws the world based on the state of the world
-;;must take a world-state as an arg because it is called in 'big-bang'
-; result of condition needs to be expanded to include functions
-(define (render-world s)
-  (cond
-    ((equal? (world-state s) 'splash_screen) (render-splashscreen s))
-    ((equal? (world-state s) 'help_screen) (render-helpscreen s))
-    ((equal? (world-state s) 'help_screen_2) (render-helpscreen s))
-    ((equal? (world-state s) 'playing) (BEHOLD-Stage s))
-    ((equal? (world-state s) 'start) (BEHOLD-Stage s))
-    ((equal? (world-state s) 'paused) (render-pausedscreen s))
-    ((equal? (world-state s) 'lost) (render-splashscreen s))
-    (else (render-splashscreen s))))
-
+   )))
 
 ;;***********
 ;;main driver
@@ -1188,7 +1298,7 @@
 ;starts game by calling make-world with new state
   (define (main)
   (big-bang (make-water-world)
-            [on-tick advance-time]
+    [on-tick advance-time]
     [to-draw render-world]
     [name "Pelagic-Kong"]
     [on-key keyboard-handler]
