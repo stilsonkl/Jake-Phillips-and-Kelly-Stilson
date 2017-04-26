@@ -1,15 +1,13 @@
-# Jake-Phillips-and-Kelly-Stilson
-____
 # Pelagic-Kong
 ***
-## Statement
-***
+### Jake Phillips and Kelly Stilson
+### Statement
 Our project is a game in the style/inspired by Donkey Kong. 
 This is personal for us because Jacob's girlfriends', grand-father helped to develop the original Donkey Kong 
 and Kelly has played it a couple times.
 It is interesting because we both wrote similar games in C++ for previous courses and we used those games as inspiration.
 
-## Analysis:
+### Analysis:
 ***
 ### Structs/Objects used:
 - World
