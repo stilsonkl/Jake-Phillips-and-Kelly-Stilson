@@ -157,7 +157,16 @@ enemies and board and can use the super-powers.
 ## Group Responsibilities
 
 ### Jake Phillips @Jacob-Phillips
-will write the code responsible for the main menu, the score calculations, tracking and saving to database and the tiles.
+***
+- I created the original Help Screen and its functionallity.
+- Added on to the functionallity of the Splash screen.
+- I wrote the code for the user to move walley side to side using a pad-event.
+- I added functioality to the help screen.
+- I added functionallity to the Won and Lost screens.
+- I added a pause screen that uses a key-event to determine to quit or continue.
+- Added horizontal wrapping at the left and right edges of the screen. (If walley leaves off the left side he appears on the right)
+- I wrote he code that allows Walley to move up(using a pad-event) but only while on spouts.(Based on if that tile contains a spout)
+- Fixed bug which allowed Walley to move side to side while on the Spouts.
 
 ### Kelly Stilson @Stilsonkl
 ***
