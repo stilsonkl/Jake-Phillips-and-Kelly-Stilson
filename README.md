@@ -7,7 +7,7 @@ ____
 Our project is a game in the style/inspired by Donkey Kong. 
 This is personal for us because Jacob's girlfriends', grand-father helped to develop the original Donkey Kong 
 and Kelly has played it a couple times.
-It is interesting because we both wrote similar games in C++ for previous courses and we are using those games as inspiration.
+It is interesting because we both wrote similar games in C++ for previous courses and we used those games as inspiration.
 
 ## Analysis:
 ***
@@ -121,7 +121,7 @@ There was Lots of hard work, late nights and frustration. Happily, no smashed co
 - [ ]  Enemy Movement  
 - [x]  Score calculations  
 
-<img src="images/Release0.2.PNG" alt="Splash Screen" width="200"/> 
+<img src="images/Release0.2_gameplay.PNG" alt="Splash Screen" width="200"/> 
 
 We did not complete Character movement and Enemy movement for the first milestone as planned.
 We met our other goals, however the Splash-screen, background tiles and images were upgraded
@@ -164,9 +164,10 @@ will write the code responsible for the main menu, the score calculations, track
 - I created all the images used in the game. 
 - I used different methods from the 2htdp/images library to draw all the character and shark images. 
 - I was able to animate the images by including an on-tick function to advance time as well as facilitate movement of the Walley character sprite and sharks. 
-- I wrote the functions to create and place the tiles for the background, create, place, animate and detect collisions
+- I wrote the functions to create and place the tiles for the background; create, place, animate and detect collisions
  with the sharks and the character sprite. 
 - I wrote the structs to house all the data regarding these objects in order to pass the packages of information to the functions
  called by the big-bang that runs the game.  
- 
+ - I wrote the functions to implement the super-powers.
+ - I implemented the ability to determine win/loss state of stage and advance the stage, re-start the stage if the character dies, game-over, or won the game.
  
