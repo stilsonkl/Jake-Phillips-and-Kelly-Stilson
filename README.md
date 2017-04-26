@@ -1,5 +1,4 @@
 # Pelagic-Kong
-***
 ### Jake Phillips and Kelly Stilson
 ### Statement
 Our project is a game in the style/inspired by Donkey Kong. 
@@ -8,7 +7,6 @@ and Kelly has played it a couple times.
 It is interesting because we both wrote similar games in C++ for previous courses and we used those games as inspiration.
 
 ### Analysis:
-***
 ### Structs/Objects used:
 - World
 - Player    
@@ -42,7 +40,7 @@ which was used for state-modification.
 ```
 
 ### Recursion:
-***
+
 Recursion was utilized to draw some of the images in our game. It was difficult because many of the 2htdp/image library combinator functions use relative points to combine and place the images. Some combinators were used in map functions to apply the combinator to a list of objects.
 ```racket
 ; takes image and qty as args
@@ -77,7 +75,7 @@ The background image of waves and spouts is actually made up of rows of tiles. T
 
 
 ### Map/Fold/Filter
-***
+
 The board, a list of tiles, was created using a map function to generate a list of tile objects. 
 
 The enemies, or list of sharks, was created using a map function based on the difficulty level and stage number.
@@ -93,9 +91,8 @@ The end game was a playable game. To that end, we have succeeded.
 Our game is playable, and we have fixed most of the bugs we found. 
 Everything planned may not have been implemented, but it can be played. 
 
-
 ### Evaluation of Results
-***
+
 We will know we are sucessfull if people are able to play the game.
 Frustration regarding the outcome, or score, of the game is not a concern when evaluating success or failure on our part.
 
