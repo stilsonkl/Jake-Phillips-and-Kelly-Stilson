@@ -1,47 +1,84 @@
 # Pelagic-Kong
-### Jake Phillips and Kelly Stilson
-### Statement
+### Kelly Stilson
+### Overview
 Our project is a game in the style/inspired by Donkey Kong. 
 This is personal for us because Jacob's girlfriends', grand-father helped to develop the original Donkey Kong 
 and Kelly has played it a couple times.
 It is interesting because we both wrote similar games in C++ for previous courses and we used those games as inspiration.
 
-### Analysis:
-### Structs/Objects used:
-- World
-- Player    
-- Stage 
-- Tile
-- Shark(enemy)
-- Super-Powers
+### Librries used:
 
-Using the struct to define the object provided constructors and accessors for the fields they contained. 
-This allowed us to pass large packets of information between functions and access the fields as necessary. The objects also contained a field for the state, 
-which was used for state-modification.
+
+- 2htdp/universe:
+
+- 2htdp/images:
+
+
 ```racket
-;  constructor= (make-world state time player difficulty score stage)
-;  eq test= world?
-;  fields= world-state, world-player
 
-(define-struct/contract world ([state (or/c 'splash_screen
-                                            'start
-                                            'playing
-                                            'paused
-                                            'won
-                                            'lost
-                                            'help_screen
-                                            'help_screen_2)]
-                               [time (and/c natural-number/c (<=/c 100000))]
-                               [player (or/c #f player?)]
-                               [difficulty (and/c natural-number/c (<=/c 1000))]
-                               [score (and/c natural-number/c (>=/c 0))]
-                               [stage (or/c #f stage?)])
-  #:transparent)
 ```
 
-### Recursion:
+### Using Recursion and Map to build the game board:
 
-Recursion was utilized to draw some of the images in our game. It was difficult because many of the 2htdp/image library combinator functions use relative points to combine and place the images. Some combinators were used in map functions to apply the combinator to a list of objects.
+Several recursive functions were used to create the board, or the background of each stage. The background is a list of tile objects implemented in such a way as to form a matrix, with each tile having an x and y position on the board. To create a tile object, the program needs to know if it is a spout tile (#t/#f) and its position on the baackground. It stored the position of the tile so that it can be referenced during gameplay to verify that the player is on, or near, a water spout tile in order to move up to the next 'floor.'
+
+The stage starts out as a list of integers which represent the numbered position in the board matrix that the spouts should be placed.
+```racket    
+;spout list ;returns list of integers
+(define (spout-list d) 
+  (let ([l (stage_number d)])  
+(cond ((eq? l 1) (list 14 19 21 25 32 40 46))  
+     ((eq? l 2) (list 17 21 28 35 41 46))    
+     ((eq? l 3) (list 19 25 30 39 45)) 
+     ((eq? l 4) (list 15 24 26 33 37 42 48)) 
+     ((eq? l 5) (list 13 17 25 33 37 44 45 46))  
+     ((eq? l 6) (list 12 18 23 36 45)) 
+     ((eq? l 7) (list 16 21 29 35 47)) 
+     ((eq? l 8) (list 13 25 37 49))  
+     ((eq? l 9) (list 14 18 21 29 33 46))  
+     (else (list 14 18 24 29)))))  
+                                         
+(define-struct/contract tile ([up? boolean?] 
+                             [position any/c]) 
+ #:transparent)                                
+```                                            
+The tile-posn-list is a list of posn objects created using two recursive functions. The first being build-posn-list, which takes an x value, y value and a list. This function creates the 'rows' of the board. If the y-value argument is too small to fit another tile, then the list is returned, if not, then it calls the make-wide function. 
+```racket
+(define (tile-posn-list d)
+  (build-posn-list (posn-x WINDOW) (- (posn-y WINDOW) TILE_HEIGHT) '()))
+
+(define (build-posn-list x y l)
+  (if (< y TILE_HEIGHT) l
+      (build-posn-list x (- y TILE_HEIGHT) (make-wide x (- y TILE_HEIGHT) l))))
+      
+(define (make-wide x y l)
+  (if (eq? 0 x) l
+      (make-wide (- x TILE_WIDTH) y 
+                    (append (list (make-posn (- x (quotient TILE_WIDTH 2)) (+ y (quotient TILE_HEIGHT 2)))) l))))
+```
+The make-wide function creates the posn's for the columns of the board. If the x-value argument reaches 0 then it will return the list, if not, it will call the function again, decreasing the x-value by the width of a tile, and appending a new posn to the list.
+
+The build-board function only takes the difficulty level of the stage as an argument. It uses let\* to determine the number of rows and columns required in the board matrix based on the size of the window and the size of the tiles. 
+*Note: this functionality was built-in incase we got to the point of creating more difficult levels where there were more "floors," or rows of tiles, and would therefore have to scale the size of the tile.*
+It then maps through the list of #t/#f values for determining the type of tile, and the list of positions, created recursively, and calls the tile constructor, to return a list of tiles. 
+
+```racket
+;;builds a list of tiles based on stage list
+;makes list of t/f the size of x*y
+;makes list of positions based on x*y and window size
+;uses map to create list of tile objects
+(define (build-board diff-level)
+  (let* ([x (/ (posn-x WINDOW) TILE_WIDTH)]
+         [y (quotient (- (posn-y WINDOW) TILE_HEIGHT) TILE_HEIGHT)])
+    (map (lambda (s p) (make-tile s p))
+         (for/list ([i (in-range 0 (* x y))])
+           (if (member i (spout-list diff-level)) #t #f))
+         (tile-posn-list diff-level))))
+```
+
+
+##Recursive Image Drawing
+
 ```racket
 ; takes image and qty as args
 ; recursive call to draw next shape in image
@@ -60,19 +97,8 @@ Recursion was utilized to draw some of the images in our game. It was difficult 
                                 (draw-sharknado image (sub1 s)))))))
 ```
 <img src="images/sharknado.PNG" alt="Sharknado" width="200"/>
-The tornado base of the Sharknado is an ellipse drawn recursively based on the number passed to the function. The sharkfins are placed on the tornado afterwards. 
-
-The background image of waves and spouts is actually made up of rows of tiles. The list of positions used to place the tiles is built using a recursive function, and once the width of all the tiles in the row has reached the window size, it stops. 
-```racket
-(define (make-wide x y l)
-  (if (eq? 0 x) l
-      (make-wide (- x TILE_WIDTH) y (append (list (make-posn (- x (quotient TILE_WIDTH 2)) (+ y (quotient TILE_HEIGHT 2)))) l))))
-
-(define (build-posn-list x y l)
-  (if (< y TILE_HEIGHT) l
-      (build-posn-list x (- y TILE_HEIGHT) (make-wide x (- y TILE_HEIGHT) l))))
-```
-
+The tornado base of the Sharknado is an ellipse drawn recursively based on the number passed to the function.*Note: Again, this was done so that we could scale the image based on the window size*
+The sharkfins are placed on the tornado afterwards. 
 
 ### Map/Fold/Filter
 
@@ -116,7 +142,7 @@ There was Lots of hard work, late nights and frustration. Happily, no smashed co
 - [ ]  Enemy Movement  
 - [x]  Score calculations  
 
-<img src="images/Release0.2_gameplay.PNG" alt="Splash Screen" width="200"/> 
+ 
 
 We did not complete Character movement and Enemy movement for the first milestone as planned.
 We met our other goals, however the Splash-screen, background tiles and images were upgraded
