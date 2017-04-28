@@ -2,9 +2,10 @@
 ### Kelly Stilson
 ### Overview
 Our project is a game in the style/inspired by Donkey Kong. 
-This is personal for us because Jacob's girlfriends', grand-father helped to develop the original Donkey Kong 
-and Kelly has played it a couple times.
-It is interesting because we both wrote similar games in C++ for previous courses and we used those games as inspiration.
+The first screen that displays is a splash screen, where it allows the player to select the difficulty for the game, view the help screens, or start the game. The help screens display instructions for game-play, movement keys, the goal and different aspects of game play.
+Once starting the game, the goal is to get the character sprite up the water spouts to the rainbow, without encountering any sharks. If the character gets too close to a shark, it dies, loses a life, and starts back at the start postition of the stage. 
+If the character reaches the rainbow, the player advances to the next stage. If the player loses all their lives it is game-over, and they are returned to the splash-screen. If the player continues to win, the stages get more difficult. The number of sharks increases, their direction varies, and their speed increases. The player is however, offered super-powers, which assist them in the more difficult levels. An armored horn makes the character impervious to shark attacks, and catching a fish give the player an extra life. 
+If a player is just too-good, they advance from the normal difficulty to sharks-with-laser-beams, which can kill the character from farther away. The next difficulty level is Sharknado, where a tornado of sharks drops random sharks on the stage.
 
 ### Librries used:
 ```racket
@@ -26,7 +27,7 @@ It is interesting because we both wrote similar games in C++ for previous course
  
 - 2htdp/images: all of the image functions: drawing lines, angles, curves, and shapes; rotate, scale, and flip image functions. `place-image`, which places one image on another; `place-images`, which maps through two lists, one of images and one of posns, to place the images at those posns, `overlay`/`underlay` which allowed me to place images in layers. Also all the text, font and color formatting functions.
 
-
+- lang/posn : provided the `make-posn` constructor, as well as equality tests, and accessors for the x and y portions of the posn
 
 
 ### Using Recursion and Map to build the game board:
@@ -35,7 +36,6 @@ A couple recursive functions were used to create the board, or the background of
 
 The stage starts out as a list of integers which represent the numbered position in the board matrix that the spouts should be placed.
 ```racket    
-;spout list ;returns list of integers
 (define (spout-list d) 
   (let ([l (stage_number d)])  
 (cond ((eq? l 1) (list 14 19 21 25 32 40 46))  
@@ -73,10 +73,6 @@ The build-board function only takes the difficulty level of the stage as an argu
 *Note: this functionality was built-in incase we got to the point of creating more difficult levels where there were more "floors," or rows of tiles, and would therefore have to scale the size of the tile.*
 It then maps through the list of #t/#f values for determining the type of tile, and the list of positions, created recursively, and calls the tile constructor, to return a list of tiles. 
 ```racket
-;;builds a list of tiles based on stage list
-;makes list of t/f the size of x*y
-;makes list of positions based on x*y and window size
-;uses map to create list of tile objects
 (define (build-board diff-level)
   (let* ([x (/ (posn-x WINDOW) TILE_WIDTH)]
          [y (quotient (- (posn-y WINDOW) TILE_HEIGHT) TILE_HEIGHT)])
@@ -94,9 +90,6 @@ The tornado base of the Sharknado is actually an ellipse drawn recursively based
 The `draw-sharknado` function takes an image and an integer size as args. It uses let\* to assign local variables used to draw each ellipse. The changes in these variables give the tornado dimension. Using a random number in a small range is what gave the illusion of the tornado twisting when it was redrawn every 1/28th of a second. As long as the size was not zero, it overlayed another ellipse ontop of the image, altering the length, width and offset. Once the size arg reached zero it returned the image created. 
 The sharkfins are placed on the tornado afterwards. 
 ```racket
-; takes image and qty as args
-; recursive call to draw next shape in image
-; returns image object
  (define (draw-sharknado image s)
    (let* ([angle (if (zero? (remainder s 3)) 0 -2)]
           [color (if (zero? (remainder s 5)) dark-wind light-wind)]
@@ -113,9 +106,38 @@ The sharkfins are placed on the tornado afterwards.
 <img src="images/Recursive_tornado.PNG" alt="Recursive tornado" width="300"/>
 
 
-### Map/Fold/Filter
+### Filtering out unwanted elements
+In the `BEHOLD-stage` funtion that renders all the images for each stage, the list of components is created, and then the list of posn's where those images need to be drawn. The super-powers given to the player should only appear once the player reaches stage 5. The images of the super-horn and the fish should only be included in the list of images if the stage is `>= 5` and the player hasnt already claimed the super-power for that stage. Once the player has claimed the super-power, the posn of that image is modified to #f. 
+Before placing the images, I used `filter` to remove any empty lists from the `stage-comp` list, and any #f values from the `stage-posn` list.
 
-The board, a list of tiles, was created using a map function to generate a list of tile objects. 
+```racket
+...
+(let*...
+[stage-comp (append (list (scale (if(eq? (player-state player) 'super) 5/9 1/2)
+                                                 (swim (player-state player) (player-direction player) time))
+                          (rainbow time)
+                          (stage-HUD st))
+                          (if(super-powers-state sp) (list (if(super-powers-armor-pos sp) (scale 2/3 (super-horn time)) '())
+                                                           (if(super-powers-fish-pos sp) (scale 2/3 fish) '())) '())
+                          (place-tiles (stage-board st))
+                          (for/list ([i (length (stage-Enemies st))])
+                             (cond ((< difficulty_level 10) (if(< i 6) (flip-horizontal sharkfin) sharkfin))
+                                   ((< difficulty_level 100) (if(< i 6) (flip-horizontal laser-shark) laser-shark))
+                                   ((< difficulty_level 1000) (if(< i 6) (flip-horizontal laser-shark)sharkfin)))))]
+[stage-posn (append (list (player-position player) (make-posn 50 75) (make-posn (quotient (posn-x WINDOW) 2) 18))
+                          (if(super-powers-state sp) (list (super-powers-armor-pos sp) (super-powers-fish-pos sp)) '())
+                          (tile-posn-list stage_n)
+                          (for/list ([i (stage-Enemies st)])
+                             (shark-p i)))])
+ ;;draw stage components and test for sharknado animation
+(cond ((>= difficulty_level 100) (create-sharknado time (place-images (filter (lambda (e) (not (empty? e))) stage-comp)
+                                                                      (filter (lambda (e) (not (eq? #f e))) stage-posn)
+                                                                      BACKGROUND)))
+       (else (place-images (filter (lambda (e) (not (empty? e))) stage-comp)
+                           (filter (lambda (e) (not (eq? #f e))) stage-posn)
+                           BACKGROUND)))))
+ ```
+
 
 The enemies, or list of sharks, was created using a map function based on the difficulty level and stage number.
 
