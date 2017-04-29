@@ -105,7 +105,7 @@ The sharkfins are placed on the tornado afterwards.
                                 (draw-sharknado image (sub1 s)))))))
 ```
 
-<img src="images/Recursive_tornado.PNG" alt="Recursive tornado" width="300"/>
+<img src="images/Recursive_tornado.png" alt="Recursive tornado" width="300"/>
 
 
 ### Filtering out unwanted elements
