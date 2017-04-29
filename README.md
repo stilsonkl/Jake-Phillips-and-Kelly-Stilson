@@ -82,10 +82,11 @@ It then maps through the list of #t/#f values for determining the type of tile, 
          (tile-posn-list diff-level))))
 ```
 This board, a list of tile objects, is a part of the stage and later drawn, producing the background(shown below with frames on tiles):
+
 <img src="images/tile-frame.PNG" alt="Background tiles" width="200"/> 
 
 
-###Drawing Images using Recursion
+### Drawing Images using Recursion
 The tornado base of the Sharknado is actually an ellipse drawn recursively based on the number passed to the function.*Note: Again, this was done so that we could scale the image based on the window size*
 The `draw-sharknado` function takes an image and an integer size as args. It uses let\* to assign local variables used to draw each ellipse. The changes in these variables give the tornado dimension. Using a random number in a small range is what gave the illusion of the tornado twisting when it was redrawn every 1/28th of a second. As long as the size was not zero, it overlayed another ellipse ontop of the image, altering the length, width and offset. Once the size arg reached zero it returned the image created. 
 The sharkfins are placed on the tornado afterwards. 
@@ -103,6 +104,7 @@ The sharkfins are placed on the tornado afterwards.
                                 x-offset y-offset
                                 (draw-sharknado image (sub1 s)))))))
 ```
+
 <img src="images/Recursive_tornado.PNG" alt="Recursive tornado" width="300"/>
 
 
