@@ -7,7 +7,7 @@ Once starting the game, the goal is to get the character sprite up the water spo
 If the character reaches the rainbow, the player advances to the next stage. If the player loses all their lives it is game-over, and they are returned to the splash-screen. If the player continues to win, the stages get more difficult. The number of sharks increases, their direction varies, and their speed increases. The player is however, offered super-powers, which assist them in the more difficult levels. An armored horn makes the character impervious to shark attacks, and catching a fish give the player an extra life. 
 If a player is just too-good, they advance from the normal difficulty to sharks-with-laser-beams, which can kill the character from farther away. The next difficulty level is Sharknado, where a tornado of sharks drops random sharks on the stage.
 
-### Librries used:
+### Libraries used:
 ```racket
 (require 2htdp/image)
 (require 2htdp/universe)
@@ -81,8 +81,8 @@ It then maps through the list of #t/#f values for determining the type of tile, 
            (if (member i (spout-list diff-level)) #t #f))
          (tile-posn-list diff-level))))
 ```
-This board, a list a tile objects is a part of the stage and later drawn, producing the background(shown below with frames on tiles):
-<img src="images/tile_frame.PNG" alt="Background tiles" width="200"/> 
+This board, a list of tile objects, is a part of the stage and later drawn, producing the background(shown below with frames on tiles):
+<img src="images/tile-frame.PNG" alt="Background tiles" width="200"/> 
 
 
 ###Drawing Images using Recursion
