@@ -118,7 +118,8 @@ These images aren't scaled, but varying recursion depths of 30, 50 and 100.
 
 
 ### Filtering out unwanted elements
-In the `BEHOLD-stage` funtion that renders all the images for each stage, the list of components is created, and then the list of posn's where those images need to be drawn. The super-powers given to the player should only appear once the player reaches stage 5. The images of the super-horn and the fish should only be included in the list of images if the stage is `>= 5` and the player hasn't already claimed the super-power for that stage. Once the player has claimed the super-power, the posn of that image is modified to #f. 
+In the `BEHOLD-stage` funtion that renders all the images for each stage, the list of components is assigned, and then the list of posn's where those images need to be drawn in a let\* statement. Because the super-powers given to the player should only appear once the player reaches stage 5, I needed some way of including the images and posn's only when needed. 
+The images of the super-horn and the fish should only be included in the list of images if the stage is `>= 5` and the player hasn't already claimed the super-power for that stage. Once the player has claimed the super-power, the posn of that image is modified to #f. 
 Before placing the images, I used `filter` to remove any empty lists from the `stage-comp` list, and any #f values from the `stage-posn` list.
 
 ```racket
@@ -152,7 +153,9 @@ The enemies, or list of sharks, was created using a map function based on the di
 
 ### Use foldl in collision detection
 The `2htdp/images` did not provide the ability to test if one image overlaped another. So I wrote a collision detection function.
-The `objet-collision` function that tested if Walley's position was close enough to an object, took Walley, and the object as args. It determined if the sides if the object's 'bounding box' were between the sides of Walley's 'bounding box.' If the sides overlapped then it returned true, if not, then returned false. The 
+The `objet_collision?` function that tested if Walley's position was close enough to an object, took Walley, and the object as args. It determined if one of the sides if the object's 'bounding box' were between the sides of Walley's 'bounding box.' If the sides overlapped then it returned true, if not, then returned false.
+The difficulty came when I needed to know if Walley collides with a shark, and because at each stage there are differing numbers or sharks, I needed a function to check all of the sharks, and return just one value. I didn't need to know which shark, just that he hit one of them, or none of them. SO I could either use a loop that would stop once the return of the collision test was #t, or check them all, and accumulate the results.
+I decided to use `foldl` to pass each shark in the `list-of-sharks` for that stage, to the collision function and return a #t/#f, which was accumulated with an `or` and the result of the previous test, and then returned.
 ```; return true/false
 (define (object_collision? player object)
   (let* ([walley_left (posn-x player)]
@@ -174,4 +177,6 @@ The `objet-collision` function that tested if Walley's position was close enough
          #f
          list-of-sharks))
 ```
+*I did learn at this point, that many of the comparision procedures could take several arguments, which meant I could compare several values all at once, without having nested >= statements. `>= arg_1 arg_2 ag_3` checks if all the args are in ascending order*
+
 We used state modification to maintain the state of game-play and pass messages between the world, stage and other objects.
