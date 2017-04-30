@@ -3,6 +3,9 @@
 ### Overview
 Our project is a game in the style/inspired by Donkey Kong. 
 The first screen that displays is a splash screen, where it allows the player to select the difficulty for the game, view the help screens, or start the game. The help screens display instructions for game-play, movement keys, the goal and different aspects of game play.
+
+<img src="images/Release-Demo.PNG" alt="Splash Screen" width="300"/> <img src="images/Help_screen.PNG" alt="Help Screen" width="300"/>
+
 Once starting the game, the goal is to get the character sprite up the water spouts to the rainbow, without encountering any sharks. If the character gets too close to a shark, it dies, loses a life, and starts back at the start postition of the stage. 
 If the character reaches the rainbow, the player advances to the next stage. If the player loses all their lives it is game-over, and they are returned to the splash-screen. If the player continues to win, the stages get more difficult. The number of sharks increases, their direction varies, and their speed increases. The player is however, offered super-powers, which assist them in the more difficult levels. An armored horn makes the character impervious to shark attacks, and catching a fish give the player an extra life. 
 If a player is just too-good, they advance from the normal difficulty to sharks-with-laser-beams, which can kill the character from farther away. The next difficulty level is Sharknado, where a tornado of sharks drops random sharks on the stage.
@@ -70,7 +73,9 @@ The tile-posn-list is a list of posn objects created using two recursive functio
 The make-wide function creates the posn's for the columns of the board. If the x-value argument reaches 0 then it will return the list, if not, it will call the function again, decreasing the x-value by the width of a tile, and appending a new posn to the list.
 
 The build-board function only takes the difficulty level of the stage as an argument. It uses let\* to determine the number of rows and columns required in the board matrix based on the size of the window and the size of the tiles. 
+
 *Note: this functionality was built-in incase we got to the point of creating more difficult levels where there were more "floors," or rows of tiles, and would therefore have to scale the size of the tile.*
+
 It then maps through the list of #t/#f values for determining the type of tile, and the list of positions, created recursively, and calls the tile constructor, to return a list of tiles. 
 ```racket
 (define (build-board diff-level)
@@ -83,12 +88,15 @@ It then maps through the list of #t/#f values for determining the type of tile, 
 ```
 This board, a list of tile objects, is a part of the stage and later drawn, producing the background(shown below with frames on tiles):
 
-<img src="images/tile-frame.PNG" alt="Background tiles" width="200"/> 
+<img src="images/tile-frame.PNG" alt="Background tiles" width="300"/> 
 
 
 ### Drawing Images using Recursion
-The tornado base of the Sharknado is actually an ellipse drawn recursively based on the number passed to the function.*Note: Again, this was done so that we could scale the image based on the window size*
-The `draw-sharknado` function takes an image and an integer size as args. It uses let\* to assign local variables used to draw each ellipse. The changes in these variables give the tornado dimension. Using a random number in a small range is what gave the illusion of the tornado twisting when it was redrawn every 1/28th of a second. As long as the size was not zero, it overlayed another ellipse ontop of the image, altering the length, width and offset. Once the size arg reached zero it returned the image created. 
+The tornado base of the Sharknado is actually an ellipse drawn recursively based on the number passed to the function.
+*Note: Again, this was done so that we could scale the image based on the window size, without having to stretch the image*
+
+The `draw-sharknado` function takes an image and an integer size as args. It uses let\* to assign local variables used to draw each ellipse. The changes in these variables give the tornado dimension. Using a random number from a small range is what gave the illusion of the tornado twisting when it was redrawn every 1/28th of a second. 
+The body of the function determines if the size is zero, return the image, otherwise, it overlays another ellipse ontop of the image, using the determined arguments, and then passes the `draw-sharknado` function as the image arg of the overlay function.
 The sharkfins are placed on the tornado afterwards. 
 ```racket
  (define (draw-sharknado image s)
@@ -106,10 +114,11 @@ The sharkfins are placed on the tornado afterwards.
 ```
 
 <img src="images/Recursive_tornado.png" alt="Recursive tornado" width="300"/>
+These images aren't scaled, but varying recursion depths of 30, 50 and 100.
 
 
 ### Filtering out unwanted elements
-In the `BEHOLD-stage` funtion that renders all the images for each stage, the list of components is created, and then the list of posn's where those images need to be drawn. The super-powers given to the player should only appear once the player reaches stage 5. The images of the super-horn and the fish should only be included in the list of images if the stage is `>= 5` and the player hasnt already claimed the super-power for that stage. Once the player has claimed the super-power, the posn of that image is modified to #f. 
+In the `BEHOLD-stage` funtion that renders all the images for each stage, the list of components is created, and then the list of posn's where those images need to be drawn. The super-powers given to the player should only appear once the player reaches stage 5. The images of the super-horn and the fish should only be included in the list of images if the stage is `>= 5` and the player hasn't already claimed the super-power for that stage. Once the player has claimed the super-power, the posn of that image is modified to #f. 
 Before placing the images, I used `filter` to remove any empty lists from the `stage-comp` list, and any #f values from the `stage-posn` list.
 
 ```racket
@@ -139,10 +148,30 @@ Before placing the images, I used `filter` to remove any empty lists from the `s
                            (filter (lambda (e) (not (eq? #f e))) stage-posn)
                            BACKGROUND)))))
  ```
-
-
 The enemies, or list of sharks, was created using a map function based on the difficulty level and stage number.
 
-Fold was used to detect object collision between the player character and the list of enemies. 
+### Use foldl in collision detection
+The `2htdp/images` did not provide the ability to test if one image overlaped another. So I wrote a collision detection function.
+The `objet-collision` function that tested if Walley's position was close enough to an object, took Walley, and the object as args. It determined if the sides if the object's 'bounding box' were between the sides of Walley's 'bounding box.' If the sides overlapped then it returned true, if not, then returned false. The 
+```; return true/false
+(define (object_collision? player object)
+  (let* ([walley_left (posn-x player)]
+         [walley_right (+ walley_left 110)]
+         [walley_top (posn-y player)]
+         [walley_bottom (+ walley_top 75)]
+         [wider (if(shark? object) (if(>= (shark-difficulty object) 10) 1.7 1) 1)] 
+         [object_left (if(shark? object) (posn-x (shark-p object)) (posn-x object))]
+         [object_right (if(shark? object) (+ object_left (* wider 50)) (+ object_left 15))]
+         [object_top (if(shark? object) (posn-y (shark-p object)) (posn-y object))]
+         [object_bottom (if(shark? object) (+ object_top 30) (+ object_top 15))])
+    (and (or (>= walley_right object_right walley_left)
+         (<= walley_right object_left walley_left))
+         (or (>= walley_top object_top walley_bottom)
+         (<= walley_top object_bottom walley_bottom)))))
 
+(define (shark_collision? player-pos list-of-sharks)
+  (foldl (lambda (shark result) (or (object_collision? player-pos shark) result))
+         #f
+         list-of-sharks))
+```
 We used state modification to maintain the state of game-play and pass messages between the world, stage and other objects.
